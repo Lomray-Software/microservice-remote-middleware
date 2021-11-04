@@ -1,0 +1,76 @@
+{
+	"name": "@lomray/microservice-remote-middleware",
+	"version": "1.0.0",
+	"description": "Microservice Remote Middleware lib",
+	"main": "lib/index.js",
+	"keywords": [
+		"js",
+		"microservice",
+		"remote",
+		"middleware",
+		"control",
+		"gateway",
+		"typescript"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Lomray-Software/microservice-remote-middleware.git"
+	},
+	"bugs": {
+		"url": "https://github.com/Lomray-Software/microservice-remote-middleware/issues"
+	},
+	"homepage": "https://github.com/Lomray-Software/microservice-remote-middleware",
+	"author": "Mikhail Yarmaliuk",
+	"license": "Apache-2.0",
+	"scripts": {
+    "test": "TS_NODE_COMPILER_OPTIONS='{\"target\":\"es6\"}' mocha --harmony --no-warnings  __tests__ --require ts-node/register --recursive --unhandled-rejections=strict --exit",
+    "prettier:format": "prettier --write 'src/**/*.{ts,tsx,*.ts,*tsx}'",
+    "prettier:check": "prettier --check --debug-check 'src/**/*.{ts,tsx,*.ts,*tsx}'",
+    "lint:check": "eslint --ext '.ts,.tsx' 'src/**/*.{ts,tsx,*.ts,*tsx}'",
+    "lint:format": "eslint --fix --ext '.ts,.tsx' 'src/**/*.{ts,tsx,*.ts,*tsx}'",
+    "ts:check": "tsc --project ./tsconfig.json --skipLibCheck --noemit",
+		"build": "rollup -c",
+    "prepare": "husky install"
+	},
+	"dependencies": {
+		"@lomray/microservice-nodejs-lib": "^2.1.0",
+		"axios": "^0.24.0",
+		"lodash": "^4.17.21"
+	},
+	"devDependencies": {
+		"@lomray/eslint-config": "^1.1.0",
+		"@types/lodash": "^4.14.176",
+    "@commitlint/cli": "^13.1.0",
+    "@commitlint/config-conventional": "^13.1.0",
+    "@istanbuljs/nyc-config-typescript": "^1.0.1",
+    "@lomray/prettier-config": "^1.0.1",
+    "@rollup/plugin-json": "^4.1.0",
+    "@types/chai": "^4.2.22",
+    "@types/mocha": "^9.0.0",
+    "@types/node": "^16.9.6",
+    "@types/sinon": "^10.0.4",
+    "@types/sinon-chai": "^3.2.5",
+    "@wessberg/rollup-plugin-ts": "^1.3.14",
+    "@zerollup/ts-transform-paths": "^1.7.18",
+    "chai": "^4.3.4",
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "husky": "^7.0.2",
+    "lint-staged": "^11.1.2",
+    "mocha": "^9.1.2",
+    "nyc": "^15.1.0",
+    "prettier": "^2.4.1",
+    "rollup": "^2.58.0",
+    "semantic-release": "^18.0.0",
+    "sinon": "^11.1.2",
+    "sinon-chai": "^3.7.0",
+    "ts-node": "^10.2.1",
+    "tsconfig-paths": "^3.11.0",
+    "ttypescript": "^1.5.12",
+    "typescript": "^4.4.3"
+	}
+}
