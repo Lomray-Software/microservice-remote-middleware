@@ -5,12 +5,12 @@
 ![GitHub package.json dependency version (dev dep on branch)](https://img.shields.io/github/package-json/dependency-version/Lomray-Software/microservice-remote-middleware/dev/typescript/master)
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 
-[![Quality Gate Status](https://sonarqube-proxy.lomray.com/status/Lomray-Software_microservice-remote-middleware?token=57b6c3eeaa047e0a1f6e6ba6c1e2f26b)](https://sonarqube.lomray.com/dashboard?id=Lomray-Software_microservice-remote-middleware)
-[![Reliability Rating](https://sonarqube-proxy.lomray.com/reliability/Lomray-Software_microservice-remote-middleware?token=57b6c3eeaa047e0a1f6e6ba6c1e2f26b)](https://sonarqube.lomray.com/dashboard?id=Lomray-Software_microservice-remote-middleware)
-[![Security Rating](https://sonarqube-proxy.lomray.com/security/Lomray-Software_microservice-remote-middleware?token=57b6c3eeaa047e0a1f6e6ba6c1e2f26b)](https://sonarqube.lomray.com/dashboard?id=Lomray-Software_microservice-remote-middleware)
-[![Vulnerabilities](https://sonarqube-proxy.lomray.com/vulnerabilities/Lomray-Software_microservice-remote-middleware?token=57b6c3eeaa047e0a1f6e6ba6c1e2f26b)](https://sonarqube.lomray.com/dashboard?id=Lomray-Software_microservice-remote-middleware)
-[![Lines of code](https://sonarqube-proxy.lomray.com/lines/Lomray-Software_microservice-remote-middleware?token=57b6c3eeaa047e0a1f6e6ba6c1e2f26b)](https://sonarqube.lomray.com/dashboard?id=Lomray-Software_microservice-remote-middleware)
-[![Coverage](https://sonarqube-proxy.lomray.com/coverage/Lomray-Software_microservice-remote-middleware?token=57b6c3eeaa047e0a1f6e6ba6c1e2f26b)](https://sonarqube.lomray.com/dashboard?id=Lomray-Software_microservice-remote-middleware)
+[![Quality Gate Status](https://sonarqube-proxy.lomray.com/status/Lomray-Software_microservice-remote-middleware?token=20253ef5f496169834bf459a8a1c1e25)](https://sonarqube.lomray.com/dashboard?id=Lomray-Software_microservice-remote-middleware)
+[![Reliability Rating](https://sonarqube-proxy.lomray.com/reliability/Lomray-Software_microservice-remote-middleware?token=20253ef5f496169834bf459a8a1c1e25)](https://sonarqube.lomray.com/dashboard?id=Lomray-Software_microservice-remote-middleware)
+[![Security Rating](https://sonarqube-proxy.lomray.com/security/Lomray-Software_microservice-remote-middleware?token=20253ef5f496169834bf459a8a1c1e25)](https://sonarqube.lomray.com/dashboard?id=Lomray-Software_microservice-remote-middleware)
+[![Vulnerabilities](https://sonarqube-proxy.lomray.com/vulnerabilities/Lomray-Software_microservice-remote-middleware?token=20253ef5f496169834bf459a8a1c1e25)](https://sonarqube.lomray.com/dashboard?id=Lomray-Software_microservice-remote-middleware)
+[![Lines of code](https://sonarqube-proxy.lomray.com/lines/Lomray-Software_microservice-remote-middleware?token=20253ef5f496169834bf459a8a1c1e25)](https://sonarqube.lomray.com/dashboard?id=Lomray-Software_microservice-remote-middleware)
+[![Coverage](https://sonarqube-proxy.lomray.com/coverage/Lomray-Software_microservice-remote-middleware?token=20253ef5f496169834bf459a8a1c1e25)](https://sonarqube.lomray.com/dashboard?id=Lomray-Software_microservice-remote-middleware)
 
 ## Install
 ```bash
