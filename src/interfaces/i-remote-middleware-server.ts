@@ -19,10 +19,10 @@ interface IRemoteMiddlewareServerParams {
 
 interface IMiddlewareRepository {
   find(params: Partial<IMiddlewareEntity>): Promise<IMiddlewareEntity[]>;
-  findOne(params: Partial<IMiddlewareEntity>): Promise<IMiddlewareEntity>;
+  findOne(params: Partial<IMiddlewareEntity>): Promise<IMiddlewareEntity | undefined>;
   create(params: Omit<IMiddlewareEntity, 'id'>): IMiddlewareEntity;
   save(entity: IMiddlewareEntity): Promise<IMiddlewareEntity>;
-  remove(entity: IMiddlewareEntity): Promise<IMiddlewareEntity>;
+  remove(entity: IMiddlewareEntity): Promise<IMiddlewareEntity | undefined>;
 }
 
 export {

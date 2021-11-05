@@ -26,11 +26,11 @@
     "pretty": true,
     "suppressImplicitAnyIndexErrors": true,
     "target": "es5",
-    "baseUrl": "./src",
+    "baseUrl": ".",
     "paths": {
       "@__helpers__/*": ["./__helpers__/*"],
-      "@interfaces/*": ["./interfaces/*"],
-      "@services/*": ["./services/*"],
+      "@interfaces/*": ["./src/interfaces/*"],
+      "@services/*": ["./src/services/*"],
     }
   },
   "exclude": [

@@ -64,7 +64,7 @@ class RemoteMiddlewareServer {
   private constructor(
     microservice: AbstractMicroservice,
     repository: IMiddlewareRepository,
-    params: Partial<IRemoteMiddlewareServerParams> = {},
+    params: Partial<IRemoteMiddlewareServerParams>,
   ) {
     this.microservice = microservice;
     this.repository = repository;

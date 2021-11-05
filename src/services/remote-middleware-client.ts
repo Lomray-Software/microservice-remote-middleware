@@ -1,5 +1,10 @@
 import type { LogDriverType, MiddlewareHandler } from '@lomray/microservice-nodejs-lib';
-import { ConsoleLogDriver, AbstractMicroservice, LogType } from '@lomray/microservice-nodejs-lib';
+import {
+  ConsoleLogDriver,
+  AbstractMicroservice,
+  LogType,
+  MiddlewareType,
+} from '@lomray/microservice-nodejs-lib';
 import _ from 'lodash';
 import type {
   IMiddlewareEntity,
@@ -61,7 +66,7 @@ class RemoteMiddlewareClient {
    */
   private constructor(
     microservice: AbstractMicroservice,
-    params: Partial<IRemoteMiddlewareParams> = {},
+    params: Partial<IRemoteMiddlewareParams>,
   ) {
     this.microservice = microservice;
 
@@ -110,7 +115,7 @@ class RemoteMiddlewareClient {
       this.registerEndpoint,
       ({ action, method, targetMethod, options }, { sender }) => {
         if (!sender || !Object.values(RemoteMiddlewareActionType).includes(action)) {
-          return { ok: false };
+          throw new Error('Invalid params for add remote middleware.');
         }
 
         const endpoint = [sender, method].join('.');
@@ -157,7 +162,7 @@ class RemoteMiddlewareClient {
     targetMethod = '*',
     params: IRemoteMiddlewareReqParams = {},
   ): MiddlewareHandler {
-    const { type, isRequired = false, reqParams } = params;
+    const { type = MiddlewareType.request, isRequired = false, reqParams } = params;
 
     if (!method) {
       throw new Error('"method" is required for register remote middleware.');
