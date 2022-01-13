@@ -14,6 +14,7 @@ import sinon from 'sinon';
 import MiddlewareMock from '@__helpers__/middleware-mock';
 import {
   IRemoteMiddlewareEndpointParams,
+  MiddlewareStrategy,
   RemoteMiddlewareActionType,
 } from '@interfaces/i-remote-middleware-client';
 import RemoteMiddlewareClient from '@services/remote-middleware-client';
@@ -189,6 +190,7 @@ describe('remote middleware client', () => {
 
   let handler: MiddlewareHandler;
   const method = 'example';
+  const request = new MicroserviceResponse({ result: { hello: 'world' } });
 
   it('should correct add middleware handler', () => {
     const targetMethod = 'target-m';
@@ -222,17 +224,99 @@ describe('remote middleware client', () => {
     expect(result?.reason).to.instanceOf(BaseException);
   });
 
-  it('should success return middleware handler data', async () => {
-    const request = new MicroserviceResponse({ result: { hello: 'world' } });
-
+  it('should success apply middleware handler data: same strategy', async () => {
     const sendReqStubbed = sinon.stub(microservice, 'sendRequest').resolves(request);
-
     const result = await handler({ task: new MicroserviceRequest({ method: 'method' }) }, {});
 
     sendReqStubbed.restore();
 
-    expect(result).to.contain({ ...request.getResult() });
+    expect(result).to.undefined;
+  });
+
+  it('should success apply middleware handler data: replace strategy', async () => {
+    const sendReqStubbed = sinon.stub(microservice, 'sendRequest').resolves(request);
+    const addEndpointSpy = sinon.spy(microservice, 'addMiddleware');
+
+    middlewareInstance.add(method, 'method-replace-strategy', {
+      isRequired: true,
+      strategy: MiddlewareStrategy.replace,
+      type: MiddlewareType.response,
+    });
+
+    const replaceHandler = addEndpointSpy.firstCall.firstArg;
+
+    const result = await replaceHandler(
+      { task: new MicroserviceRequest({ method: 'method' }), result: { ms: 'result' } },
+      {},
+    );
+
+    sendReqStubbed.restore();
+    addEndpointSpy.restore();
+
+    expect(result).to.deep.equal({ ...request.getResult(), payload: { senderStack: ['example'] } });
     expect(result?.payload?.senderStack[0]).to.equal(method);
+  });
+
+  it('should success apply middleware handler data: merge strategy', async () => {
+    const sendReqStubbed = sinon.stub(microservice, 'sendRequest').resolves(request);
+    const addEndpointSpy = sinon.spy(microservice, 'addMiddleware');
+
+    middlewareInstance.add(method, 'method-merge-strategy', {
+      isRequired: true,
+      strategy: MiddlewareStrategy.merge,
+      type: MiddlewareType.response,
+    });
+
+    const mergeHandler = addEndpointSpy.firstCall.firstArg;
+
+    const result = await mergeHandler(
+      { task: new MicroserviceRequest({ method: 'method' }), result: { ms: 'result' } },
+      {},
+    );
+
+    sendReqStubbed.restore();
+    addEndpointSpy.restore();
+
+    expect(result).to.deep.equal({
+      ...request.getResult(),
+      ms: 'result',
+      payload: { senderStack: ['example'] },
+    });
+    expect(result?.payload?.senderStack[0]).to.equal(method);
+  });
+
+  it('should success apply middleware handler data: same strategy with convertParams & convertResult', async () => {
+    const sendReqStubbed = sinon.stub(microservice, 'sendRequest').resolves(request);
+    const addEndpointSpy = sinon.spy(microservice, 'addMiddleware');
+
+    middlewareInstance.add(method, 'method-same-with-convert-strategy', {
+      isRequired: true,
+      type: MiddlewareType.response,
+      convertParams: { 'someParam.test': 'another.hi' },
+      convertResult: { hello: 'res-ms.val' },
+    });
+
+    const sameHandler = addEndpointSpy.firstCall.firstArg;
+    const result = await sameHandler(
+      {
+        task: new MicroserviceRequest({ method: 'method', params: { someParam: { test: 'hi' } } }),
+        result: { ms: 'result' },
+      },
+      {},
+    );
+
+    const [, reqParams] = sendReqStubbed.firstCall.args;
+
+    sendReqStubbed.restore();
+    addEndpointSpy.restore();
+
+    expect(reqParams.another).to.contain({ hi: 'hi' });
+    expect(result).to.deep.equal({
+      ms: 'result',
+      'res-ms': {
+        val: 'world',
+      },
+    });
   });
 
   it('should NOT throw error if middleware handle is NOT required and response is error', async () => {

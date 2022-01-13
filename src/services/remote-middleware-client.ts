@@ -1,7 +1,7 @@
 import type { LogDriverType, MiddlewareHandler } from '@lomray/microservice-nodejs-lib';
 import {
-  ConsoleLogDriver,
   AbstractMicroservice,
+  ConsoleLogDriver,
   LogType,
   MiddlewareType,
 } from '@lomray/microservice-nodejs-lib';
@@ -12,7 +12,10 @@ import type {
   IRemoteMiddlewareParams,
   IRemoteMiddlewareReqParams,
 } from '@interfaces/i-remote-middleware-client';
-import { RemoteMiddlewareActionType } from '@interfaces/i-remote-middleware-client';
+import {
+  MiddlewareStrategy,
+  RemoteMiddlewareActionType,
+} from '@interfaces/i-remote-middleware-client';
 
 /**
  * Service for register remote middleware on client
@@ -155,6 +158,35 @@ class RemoteMiddlewareClient {
   }
 
   /**
+   * Convert one structure to another
+   *
+   * Example:
+   * mapObj: { 'from.one.key': 'to.other.key' }
+   * input: { from: { one: { key: 1 } } }
+   *
+   * Output will be:
+   * output: { to: { other: { key: 1 } } }
+   * @private
+   */
+  private convertData(
+    output?: Record<string, any>,
+    input?: Record<string, any>,
+    mapObj?: Record<string, string>,
+  ): Record<string, any> | undefined {
+    if (!mapObj) {
+      return output;
+    }
+
+    const result = { ...output };
+
+    Object.entries(mapObj).forEach(([from, to]) => {
+      _.set(result, to, _.get(input, from));
+    });
+
+    return result;
+  }
+
+  /**
    * Call microservice method like middleware
    */
   public add(
@@ -162,37 +194,57 @@ class RemoteMiddlewareClient {
     targetMethod = '*',
     params: IRemoteMiddlewareReqParams = {},
   ): MiddlewareHandler {
-    const { type = MiddlewareType.request, isRequired = false, reqParams } = params;
+    const {
+      type = MiddlewareType.request,
+      isRequired = false,
+      strategy = MiddlewareStrategy.same,
+      convertParams,
+      convertResult,
+      reqParams,
+    } = params;
 
     if (!method) {
       throw new Error('"method" is required for register remote middleware.');
     }
 
-    const handler = (this.methods[method] = (data, req) => {
-      const request = _.pick(req, [
-        'status',
-        'headers',
-        'query',
-        'params',
-        'statusCode',
-        'statusText',
-        'httpVersion',
-      ]);
+    const handler = (this.methods[method] = (data) => {
+      const methodParams = {
+        payload: {
+          middleware: { ...data },
+          ...(data.task.getParams()?.payload ?? {}),
+        },
+      };
 
       return this.microservice
-        .sendRequest(method, { ...data, req: request }, reqParams)
+        .sendRequest(
+          method,
+          this.convertData(methodParams, data.task.getParams(), convertParams),
+          reqParams,
+        )
         .then((response) => {
           if (isRequired && response.getError()) {
             throw response.getError();
           }
 
           const [microservice] = method.split('.');
+          const result = { ...(response.getResult() ?? {}) };
+          const requestData = type === MiddlewareType.request ? data.task.getParams() : data.result;
 
-          return _.merge(response.getResult(), {
-            payload: {
-              senderStack: [...(data.task.getParams()?.payload?.senderStack ?? []), microservice],
-            },
-          });
+          _.set(result, 'payload.senderStack', [
+            ...(data.task.getParams()?.payload?.senderStack ?? []),
+            microservice,
+          ]);
+
+          switch (strategy) {
+            case MiddlewareStrategy.merge:
+              return _.merge(requestData, result);
+
+            case MiddlewareStrategy.replace:
+              return result;
+          }
+
+          // same strategy
+          return this.convertData(requestData, result, convertResult);
         })
         .catch((e) => {
           this.logDriver(

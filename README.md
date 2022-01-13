@@ -63,7 +63,6 @@ const result = async () => {
     await microservice.start();
   } catch (e) {
     console.info('\x1b[31m%s\x1b[0m', `Failed to start microservice: ${e.message as string}`);
-    process.exit(1);
   }
 };
 
@@ -130,5 +129,22 @@ await remoteMiddleware.add(
   'middleware-authenticate',
   'gateway',
   '*',
+);
+
+// Or you can chose another middleware response strategy and convert input/output data
+await remoteMiddleware.add(
+  'authentication',
+  'get-jwt',
+  'gateway',
+  '*',
+  {
+    type: MiddlewareType.response,
+    strategy: MiddlewareStrategy.same,
+    isRequired: true,
+    convertResult: {
+        // here we get user id from users microservice response and pass like param to 'get-jwt' method
+        'user.id': 'userId'
+    }
+  }
 );
 ```

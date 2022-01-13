@@ -223,7 +223,7 @@ class RemoteMiddlewareServer {
   }
 
   /**
-   * Register/deregister on remote microservices
+   * Register/deregister in remote microservices
    * @private
    */
   private async remoteRegister(
@@ -243,7 +243,7 @@ class RemoteMiddlewareServer {
 
     return Promise.all(requests).then(() =>
       this.logDriver(
-        () => `Remote middleware server: ${data.action} - ${target}.${data.targetMethod as string}`,
+        () => `Remote middleware server: ${data.action} - ${target}.${data.targetMethod ?? ''}`,
       ),
     );
   }

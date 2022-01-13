@@ -4,6 +4,17 @@ import type {
   MiddlewareType,
 } from '@lomray/microservice-nodejs-lib';
 
+enum MiddlewareStrategy {
+  merge = 'merge',
+  replace = 'replace',
+  same = 'same',
+}
+
+enum RemoteMiddlewareActionType {
+  ADD = 'ADD',
+  REMOVE = 'REMOVE',
+}
+
 interface IRemoteMiddlewareParams {
   logDriver: IAbstractMicroserviceParams['logDriver'];
   configurationMsName: string;
@@ -12,12 +23,10 @@ interface IRemoteMiddlewareParams {
 interface IRemoteMiddlewareReqParams {
   type?: MiddlewareType;
   isRequired?: boolean;
+  strategy?: MiddlewareStrategy; // default: same
+  convertParams?: Record<string, string>; // you can convert input request data to params middleware method
+  convertResult?: Record<string, string>; // you can convert output middleware method data (without replace by default)
   reqParams?: IInnerRequestParams;
-}
-
-enum RemoteMiddlewareActionType {
-  ADD = 'ADD',
-  REMOVE = 'REMOVE',
 }
 
 interface IRemoteMiddlewareEndpointParams {
@@ -55,4 +64,5 @@ export {
   RemoteMiddlewareActionType,
   IRemoteMiddlewareRequest,
   IMiddlewareEntity,
+  MiddlewareStrategy,
 };
