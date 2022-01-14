@@ -39,10 +39,6 @@ describe('remote middleware server', () => {
     expect(RemoteMiddlewareServer.getInstance()).to.equal(middlewareInstance);
   });
 
-  it('should correct set default log driver', () => {
-    expect(middlewareInstance).to.have.property('logDriver').equal(ConsoleLogDriver);
-  });
-
   it('should correct instantiate without log driver', () => {
     const sandbox = sinon.createSandbox();
 

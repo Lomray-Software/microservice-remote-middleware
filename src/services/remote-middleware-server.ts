@@ -43,7 +43,7 @@ class RemoteMiddlewareServer {
    * Service log driver
    * @private
    */
-  private readonly logDriver: LogDriverType = ConsoleLogDriver;
+  private readonly logDriver: LogDriverType = ConsoleLogDriver();
 
   /**
    * Register remote endpoint name
@@ -232,7 +232,7 @@ class RemoteMiddlewareServer {
   ): Promise<void | MicroserviceResponse[]> {
     const ijsonConnection = await this.microservice.getConnection();
     const { data: channels } = await axios.request({ url: `${ijsonConnection}/rpc/details` });
-    const msWorkers: number[] =
+    const msWorkers: string[] =
       channels?.[`${this.microservice.getChannelPrefix()}/${target}`]?.worker_ids ?? [];
 
     const requests = msWorkers.map((workerId) =>

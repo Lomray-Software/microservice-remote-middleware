@@ -43,7 +43,7 @@ class RemoteMiddlewareClient {
    * Service log driver
    * @private
    */
-  private readonly logDriver: LogDriverType = ConsoleLogDriver;
+  private readonly logDriver: LogDriverType = ConsoleLogDriver();
 
   /**
    * Name of configuration microservice
