@@ -1,13 +1,11 @@
 import { MiddlewareType } from '@lomray/microservice-nodejs-lib';
-import type {
-  IMiddlewareEntity,
-  IRemoteMiddlewareReqParams,
-} from '@interfaces/i-remote-middleware-client';
+import { MiddlewareEntity } from '@entities/server-params';
+import type { IRemoteMiddlewareReqParams } from '@interfaces/i-remote-middleware-client';
 
 /**
  * Mock implementation of middleware
  */
-class MiddlewareMock implements IMiddlewareEntity {
+class MiddlewareMock implements MiddlewareEntity {
   id: number;
   sender: string;
   senderMethod: string;
@@ -16,7 +14,7 @@ class MiddlewareMock implements IMiddlewareEntity {
   type: MiddlewareType;
   params: IRemoteMiddlewareReqParams;
 
-  constructor(params?: Partial<IMiddlewareEntity>) {
+  constructor(params?: Partial<MiddlewareEntity>) {
     Object.assign(this, params);
   }
 }

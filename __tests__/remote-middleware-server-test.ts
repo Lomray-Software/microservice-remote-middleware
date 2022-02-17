@@ -4,14 +4,14 @@ import {
   Microservice,
   MiddlewareType,
 } from '@lomray/microservice-nodejs-lib';
-import axios from 'axios';
 import { expect } from 'chai';
 import _ from 'lodash';
 import sinon from 'sinon';
 import MiddlewareMock from '@__helpers__/middleware-mock';
 import MiddlewareRepositoryMock from '@__helpers__/middleware-repository-mock';
+import { ServerRegisterMiddlewareInput } from '@entities/server-params';
+import { IWithEndpointMeta } from '@helpers/with-meta';
 import { RemoteMiddlewareActionType } from '@interfaces/i-remote-middleware-client';
-import { IRemoteMiddlewareEndpointParamsServer } from '@interfaces/i-remote-middleware-server';
 import RemoteMiddlewareServer from '@services/remote-middleware-server';
 
 describe('remote middleware server', () => {
@@ -70,13 +70,13 @@ describe('remote middleware server', () => {
   });
 
   let registerEndpoint,
-    registerHandler: IEndpointHandler<IRemoteMiddlewareEndpointParamsServer>,
+    registerHandler: IEndpointHandler<ServerRegisterMiddlewareInput>,
     registerOptions;
-  const endpointParams: IRemoteMiddlewareEndpointParamsServer = {
+  const endpointParams: ServerRegisterMiddlewareInput = {
     action: RemoteMiddlewareActionType.ADD,
     target: 'target',
     targetMethod: 'targetMethod',
-    method: 'method',
+    senderMethod: 'method',
   };
   const endpointOptions = { sender: 'sender' } as any;
 
@@ -94,9 +94,19 @@ describe('remote middleware server', () => {
     expect(registerOptions?.isDisableMiddlewares).to.ok;
   });
 
+  it('should correctly return endpoint metadata', () => {
+    const result = (registerHandler as typeof registerHandler & IWithEndpointMeta).getMeta();
+
+    expect(result).to.deep.equal({
+      description: 'Add remote middleware for any microservice',
+      input: ['ServerRegisterMiddlewareInput'],
+      output: ['ServerRegisterMiddlewareOutput', undefined],
+    });
+  });
+
   it('should throw validation errors when pass incorrect registration params', async () => {
     const getParamsWithout = (omit: string) =>
-      _.omit(endpointParams, [omit]) as IRemoteMiddlewareEndpointParamsServer;
+      _.omit(endpointParams, [omit]) as ServerRegisterMiddlewareInput;
 
     const result = await Promise.allSettled([
       registerHandler(endpointParams, {} as any), // not pass sender
@@ -105,7 +115,7 @@ describe('remote middleware server', () => {
         {
           ...endpointParams,
           action: 'unknown',
-        } as unknown as IRemoteMiddlewareEndpointParamsServer,
+        } as unknown as ServerRegisterMiddlewareInput,
         endpointOptions,
       ), // pass incorrect action
       registerHandler(getParamsWithout('method'), endpointOptions), // not pass method
@@ -150,7 +160,7 @@ describe('remote middleware server', () => {
       {
         ...endpointParams,
         action: RemoteMiddlewareActionType.REMOVE,
-        options: { type: MiddlewareType.response },
+        params: { type: MiddlewareType.response },
       },
       endpointOptions,
     );
@@ -178,14 +188,21 @@ describe('remote middleware server', () => {
     expect(options?.isPrivate).to.ok;
     expect(options?.isDisableMiddlewares).to.ok;
     expect(repoFindSpy).to.calledWith({ target: endpointOptions.sender });
-  });
 
-  const channels = {
-    [`${microservice.getChannelPrefix()}/${endpointParams.target}`]: {
-      // eslint-disable-next-line camelcase
-      worker_ids: ['demo-channel-id'],
-    },
-  };
+    // test metadata for obtain endpoint
+    const result = (handler as typeof handler & IWithEndpointMeta).getMeta();
+
+    expect(result).to.deep.equal({
+      description: 'Get remote middlewares for microservice',
+      input: [undefined],
+      output: [
+        'ServerObtainMiddlewareOutput',
+        {
+          list: ['MiddlewareEntity'],
+        },
+      ],
+    });
+  });
 
   it('should correct add remote middleware (save & update)', async () => {
     const middlewareParams = { type: MiddlewareType.request, isRequired: false };
@@ -193,26 +210,17 @@ describe('remote middleware server', () => {
     const sandbox = sinon.createSandbox();
     const repoCreateSpy = sandbox.spy(repository, 'create');
     const repoSaveSpy = sandbox.spy(repository, 'save');
-
-    sandbox
-      .stub(axios, 'request')
-      .onCall(0)
-      .resolves({ data: channels })
-      // check empty channels
-      .onCall(1)
-      .resolves({ data: [] });
-
     const sendRequestStubbed = sandbox.stub(microservice, 'sendRequest').resolves();
-    const { method, target, targetMethod } = endpointParams;
+    const { senderMethod, target, targetMethod } = endpointParams;
     const { sender } = endpointOptions;
 
     // Create middleware
-    await middlewareInstance.add(sender, method, target, targetMethod);
+    await middlewareInstance.add(sender, senderMethod, target, targetMethod);
 
     sandbox.stub(repository, 'findOne').resolves(new MiddlewareMock());
 
     // Update middleware
-    await middlewareInstance.add(sender, method, target, targetMethod, middlewareParams);
+    await middlewareInstance.add(sender, senderMethod, target, targetMethod, middlewareParams);
 
     sandbox.restore();
 
@@ -222,7 +230,7 @@ describe('remote middleware server', () => {
     expect(repoCreateSpy).to.calledOnce;
     expect(repoCreateSpy.firstCall.firstArg).to.includes({
       sender,
-      senderMethod: method,
+      senderMethod,
       target,
       targetMethod,
       type: MiddlewareType.request,
@@ -230,35 +238,32 @@ describe('remote middleware server', () => {
     expect(repoSaveSpy).to.calledTwice;
 
     // Check remoteRegister
-    expect(sendRequestStubbed).to.calledOnce;
+    expect(sendRequestStubbed).to.calledTwice; // create / update
     expect(remoteEndpoint).to.equal(`${target}.${middlewareInstance['registerEndpoint']}`);
-    expect(endpointParams).to.includes(_.omit(remoteData, ['options']));
+    expect({ sender, ...endpointParams }).to.includes(_.omit(remoteData, ['params']));
   });
 
   it('should correct remove remote middleware', async () => {
     const sandbox = sinon.createSandbox();
     const repoRemoveSpy = sandbox.spy(repository, 'remove');
     const sendRequestStubbed = sandbox.stub(microservice, 'sendRequest').resolves();
-
-    sandbox.stub(axios, 'request').resolves({ data: channels });
-
-    const { method, target, targetMethod } = endpointParams;
+    const { senderMethod, target, targetMethod } = endpointParams;
     const { sender } = endpointOptions;
 
     // Middleware not exist
-    await middlewareInstance.remove(sender, method, target, targetMethod);
+    await middlewareInstance.remove(sender, senderMethod, target, targetMethod);
 
     sandbox.stub(repository, 'findOne').resolves(
       new MiddlewareMock({
         sender,
-        senderMethod: method,
+        senderMethod,
         target,
         targetMethod,
         type: MiddlewareType.request,
       }),
     );
 
-    await middlewareInstance.remove(sender, method, target, targetMethod);
+    await middlewareInstance.remove(sender, senderMethod, target, targetMethod);
 
     sandbox.restore();
 
@@ -269,8 +274,8 @@ describe('remote middleware server', () => {
 
     // Check remoteRegister
     expect(remoteEndpoint).to.equal(`${target}.${middlewareInstance['registerEndpoint']}`);
-    expect({ ...endpointParams, action: RemoteMiddlewareActionType.REMOVE }).to.includes(
-      _.omit(remoteData, ['options']),
+    expect({ ...endpointParams, action: RemoteMiddlewareActionType.REMOVE, sender }).to.includes(
+      _.omit(remoteData, ['params']),
     );
   });
 });

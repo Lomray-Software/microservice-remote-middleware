@@ -1,18 +1,22 @@
 import type { LogDriverType } from '@lomray/microservice-nodejs-lib';
 import {
   AbstractMicroservice,
+  BaseException,
   ConsoleLogDriver,
-  MicroserviceResponse,
+  IEndpointHandler,
   MiddlewareType,
 } from '@lomray/microservice-nodejs-lib';
-import axios from 'axios';
-import type {
-  IRemoteMiddlewareEndpointParams,
-  IRemoteMiddlewareReqParams,
-} from '@interfaces/i-remote-middleware-client';
+import { validate } from 'class-validator';
+import {
+  MiddlewareEntity,
+  ServerObtainMiddlewareOutput,
+  ServerRegisterMiddlewareInput,
+  ServerRegisterMiddlewareOutput,
+} from '@entities/server-params';
+import withMeta from '@helpers/with-meta';
+import type { IRemoteMiddlewareReqParams } from '@interfaces/i-remote-middleware-client';
 import { RemoteMiddlewareActionType } from '@interfaces/i-remote-middleware-client';
 import type {
-  IRemoteMiddlewareEndpointParamsServer,
   IRemoteMiddlewareServerParams,
   IMiddlewareRepository,
 } from '@interfaces/i-remote-middleware-server';
@@ -103,32 +107,58 @@ class RemoteMiddlewareServer {
   }
 
   /**
-   * Endpoint for adding remote middleware (for any microservice except server)
+   * Endpoint for adding remote middleware
    */
   public addRegisterEndpoint(): RemoteMiddlewareServer {
-    this.microservice.addEndpoint<IRemoteMiddlewareEndpointParamsServer>(
-      this.registerEndpoint,
-      async ({ action, target, targetMethod, method, options }, { sender }) => {
-        if (
-          !sender ||
-          !Object.values(RemoteMiddlewareActionType).includes(action) ||
-          !method ||
-          !target ||
-          !targetMethod
-        ) {
-          throw new Error('Invalid params for add remote middleware.');
+    const handler: IEndpointHandler<
+      ServerRegisterMiddlewareInput,
+      any,
+      ServerRegisterMiddlewareOutput
+    > = withMeta(
+      async (reqParams, { sender: reqSender }) => {
+        const {
+          action,
+          target,
+          targetMethod,
+          sender = reqSender,
+          senderMethod,
+          params,
+        } = reqParams;
+        const errors = (
+          await validate(
+            Object.assign(new ServerRegisterMiddlewareInput(), { sender: reqSender, ...reqParams }),
+            {
+              whitelist: true,
+              forbidNonWhitelisted: true,
+            },
+          )
+        ).map(({ value, property, constraints }) => ({ value, property, constraints }));
+
+        if (errors.length > 0) {
+          throw new BaseException({
+            status: 422,
+            message: 'Invalid params for add remote middleware.',
+            payload: errors,
+          });
         }
 
         if (action === RemoteMiddlewareActionType.ADD) {
-          await this.add(sender, method, target, targetMethod, options);
+          await this.add(sender as string, senderMethod, target, targetMethod, params || undefined);
         } else {
-          await this.remove(sender, method, target, targetMethod, options?.type);
+          await this.remove(sender as string, senderMethod, target, targetMethod, params?.type);
         }
 
         return { ok: true };
       },
-      { isDisableMiddlewares: true, isPrivate: true },
+      'Add remote middleware for any microservice',
+      ServerRegisterMiddlewareInput,
+      ServerRegisterMiddlewareOutput,
     );
+
+    this.microservice.addEndpoint(this.registerEndpoint, handler, {
+      isDisableMiddlewares: true,
+      isPrivate: true,
+    });
 
     this.logDriver(() => 'Remote middleware server: register endpoint ready.');
 
@@ -139,11 +169,18 @@ class RemoteMiddlewareServer {
    * Add endpoint for obtain remote middleware
    */
   public addObtainEndpoint(): RemoteMiddlewareServer {
-    this.microservice.addEndpoint(
-      this.obtainEndpoint,
-      (_, { sender }) => this.repository.find({ target: sender }),
-      { isDisableMiddlewares: true, isPrivate: true },
+    const handler: IEndpointHandler<never, never, ServerObtainMiddlewareOutput> = withMeta(
+      async (_, { sender }) => ({ list: await this.repository.find({ target: sender }) }),
+      'Get remote middlewares for microservice',
+      undefined,
+      ServerObtainMiddlewareOutput,
+      { list: [MiddlewareEntity.name] },
     );
+
+    this.microservice.addEndpoint(this.obtainEndpoint, handler, {
+      isDisableMiddlewares: true,
+      isPrivate: true,
+    });
 
     this.logDriver(() => 'Remote middleware server: obtain endpoint ready.');
 
@@ -184,11 +221,13 @@ class RemoteMiddlewareServer {
     }
 
     await this.repository.save(entity);
-    await this.remoteRegister(target, {
+    await this.remoteRegister({
       action: RemoteMiddlewareActionType.ADD,
-      method: senderMethod,
+      target,
       targetMethod,
-      options: params,
+      sender,
+      senderMethod,
+      params,
     });
   }
 
@@ -215,10 +254,12 @@ class RemoteMiddlewareServer {
     }
 
     await this.repository.remove(entity);
-    await this.remoteRegister(target, {
+    await this.remoteRegister({
       action: RemoteMiddlewareActionType.REMOVE,
-      method: senderMethod,
+      target,
       targetMethod,
+      sender,
+      senderMethod,
     });
   }
 
@@ -226,26 +267,24 @@ class RemoteMiddlewareServer {
    * Register/deregister in remote microservices
    * @private
    */
-  private async remoteRegister(
-    target: string,
-    data: IRemoteMiddlewareEndpointParams,
-  ): Promise<void | MicroserviceResponse[]> {
-    const ijsonConnection = await this.microservice.getConnection();
-    const { data: channels } = await axios.request({ url: `${ijsonConnection}/rpc/details` });
-    const msWorkers: string[] =
-      channels?.[`${this.microservice.getChannelPrefix()}/${target}`]?.worker_ids ?? [];
+  private remoteRegister(data: ServerRegisterMiddlewareInput): Promise<void> {
+    const { target, action, targetMethod, sender, senderMethod, params } = data;
+    const endpoint = [target, this.registerEndpoint].join('.');
 
-    const requests = msWorkers.map((workerId) =>
-      this.microservice.sendRequest(`${target}.${this.registerEndpoint}`, data, {
-        reqParams: { headers: { 'worker-id': workerId } },
-      }),
-    );
-
-    return Promise.allSettled(requests).then(() =>
-      this.logDriver(
-        () => `Remote middleware server: ${data.action} - ${target}.${data.targetMethod ?? ''}`,
-      ),
-    );
+    return this.microservice
+      .sendRequest(
+        endpoint,
+        { action, targetMethod, sender, senderMethod, params },
+        {
+          // publish (send) request to all alive workers
+          reqParams: { headers: { type: 'pub' } },
+        },
+      )
+      .then(() => {
+        this.logDriver(
+          () => `Remote middleware server: ${action} - ${target}.${targetMethod ?? ''}`,
+        );
+      });
   }
 }
 

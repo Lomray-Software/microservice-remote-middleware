@@ -12,8 +12,9 @@ import { expect } from 'chai';
 import _ from 'lodash';
 import sinon from 'sinon';
 import MiddlewareMock from '@__helpers__/middleware-mock';
+import { ClientRegisterMiddlewareInput } from '@entities/client-params';
+import { IWithEndpointMeta } from '@helpers/with-meta';
 import {
-  IRemoteMiddlewareEndpointParams,
   MiddlewareStrategy,
   RemoteMiddlewareActionType,
 } from '@interfaces/i-remote-middleware-client';
@@ -78,11 +79,11 @@ describe('remote middleware client', () => {
   });
 
   let registerEndpoint,
-    registerHandler: IEndpointHandler<IRemoteMiddlewareEndpointParams>,
+    registerHandler: IEndpointHandler<ClientRegisterMiddlewareInput>,
     registerOptions;
-  const endpointParams: IRemoteMiddlewareEndpointParams = {
+  const endpointParams: ClientRegisterMiddlewareInput = {
     action: RemoteMiddlewareActionType.ADD,
-    method: 'method',
+    senderMethod: 'method',
     targetMethod: 'targetMethod',
   };
   const endpointOptions = { sender: 'sender' } as any;
@@ -101,23 +102,38 @@ describe('remote middleware client', () => {
     expect(registerOptions?.isDisableMiddlewares).to.ok;
   });
 
-  it('should throw validation errors when pass incorrect registration params', () => {
-    expect(() => registerHandler(endpointParams, {} as any)).to.throw(); // not pass sender
-    expect(() =>
+  it('should correctly return endpoint metadata', () => {
+    const result = (registerHandler as typeof registerHandler & IWithEndpointMeta).getMeta();
+
+    expect(result).to.deep.equal({
+      description: 'Register remote middleware on this microservice',
+      input: ['ClientRegisterMiddlewareInput'],
+      output: ['ClientRegisterMiddlewareOutput', undefined],
+    });
+  });
+
+  it('should throw validation errors when pass incorrect registration params', async () => {
+    const result = await Promise.allSettled([
+      // not pass sender
+      registerHandler(endpointParams, {} as any),
+      // not pass action
       registerHandler(
-        _.omit(endpointParams, ['action']) as IRemoteMiddlewareEndpointParams,
+        _.omit(endpointParams, ['action']) as ClientRegisterMiddlewareInput,
         endpointOptions,
       ),
-    ).to.throw(); // not pass action
-    expect(() =>
+      // invalid action
       registerHandler(
         {
           ...endpointParams,
           action: 'unknown',
-        } as unknown as IRemoteMiddlewareEndpointParams,
+        } as unknown as ClientRegisterMiddlewareInput,
         endpointOptions,
       ),
-    ).to.throw(); // invalid action
+    ]);
+
+    result.forEach(({ status }) => {
+      expect(status).to.equal('rejected');
+    });
   });
 
   it('should call "add" method in register handler', async () => {
@@ -130,7 +146,7 @@ describe('remote middleware client', () => {
     expect(stubbed).to.calledOnce;
     expect(result?.ok).to.ok;
     expect(stubbed.firstCall.firstArg).to.equal(
-      [endpointOptions.sender, endpointParams.method].join('.'),
+      [endpointOptions.sender, endpointParams.senderMethod].join('.'),
     );
   });
 
@@ -164,7 +180,7 @@ describe('remote middleware client', () => {
       .onCall(0)
       .resolves(new MicroserviceResponse())
       .onCall(1)
-      .resolves(new MicroserviceResponse({ result: [middleware] }));
+      .resolves(new MicroserviceResponse({ result: { list: [middleware] } }));
 
     // 0 call - empty
     await middlewareInstance.obtainMiddlewares();
@@ -178,10 +194,6 @@ describe('remote middleware client', () => {
     expect(endpoint).to.equal([middleware.sender, middleware.senderMethod].join('.'));
     expect(targetMethod).to.equal(middleware.targetMethod);
     expect(params).to.deep.equal(middleware.params);
-  });
-
-  it('should throw error when try add middleware without method', () => {
-    expect(() => middlewareInstance.add('')).to.throw();
   });
 
   let handler: MiddlewareHandler;

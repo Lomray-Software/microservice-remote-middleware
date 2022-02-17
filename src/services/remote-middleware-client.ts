@@ -1,14 +1,24 @@
-import type { LogDriverType, MiddlewareHandler } from '@lomray/microservice-nodejs-lib';
+import type {
+  IEndpointHandler,
+  LogDriverType,
+  MiddlewareHandler,
+} from '@lomray/microservice-nodejs-lib';
 import {
   AbstractMicroservice,
+  BaseException,
   ConsoleLogDriver,
   LogType,
   MiddlewareType,
 } from '@lomray/microservice-nodejs-lib';
+import { validate } from 'class-validator';
 import _ from 'lodash';
+import {
+  ClientRegisterMiddlewareInput,
+  ClientRegisterMiddlewareOutput,
+} from '@entities/client-params';
+import { ServerObtainMiddlewareOutput } from '@entities/server-params';
+import withMeta from '@helpers/with-meta';
 import type {
-  IMiddlewareEntity,
-  IRemoteMiddlewareEndpointParams,
   IRemoteMiddlewareParams,
   IRemoteMiddlewareReqParams,
 } from '@interfaces/i-remote-middleware-client';
@@ -110,21 +120,42 @@ class RemoteMiddlewareClient {
   }
 
   /**
-   * Add endpoint for register remote middleware (current microservice)
+   * Add endpoint for register remote middleware (this microservice)
+   *
+   * NOTE: we can't register method for another microservice, only server microservice can do it,
+   * other microservices can register only self method.
    * @protected
    */
   public addRegisterEndpoint(): RemoteMiddlewareClient {
-    this.microservice.addEndpoint<IRemoteMiddlewareEndpointParams>(
-      this.registerEndpoint,
-      ({ action, method, targetMethod, options }, { sender }) => {
-        if (!sender || !Object.values(RemoteMiddlewareActionType).includes(action)) {
-          throw new Error('Invalid params for add remote middleware.');
+    const handler: IEndpointHandler<
+      ClientRegisterMiddlewareInput,
+      any,
+      ClientRegisterMiddlewareOutput
+    > = withMeta(
+      async (reqParams, { sender: reqSender }) => {
+        const { action, targetMethod, sender = reqSender, senderMethod, params } = reqParams;
+        const errors = (
+          await validate(
+            Object.assign(new ClientRegisterMiddlewareInput(), { sender: reqSender, ...reqParams }),
+            {
+              whitelist: true,
+              forbidNonWhitelisted: true,
+            },
+          )
+        ).map(({ value, property, constraints }) => ({ value, property, constraints }));
+
+        if (errors.length > 0) {
+          throw new BaseException({
+            status: 422,
+            message: 'Invalid params for add remote middleware.',
+            payload: errors,
+          });
         }
 
-        const endpoint = [sender, method].join('.');
+        const endpoint = [sender, senderMethod].join('.');
 
         if (action === RemoteMiddlewareActionType.ADD) {
-          this.add(endpoint, targetMethod, options);
+          this.add(endpoint, targetMethod, params || undefined);
           this.logDriver(() => `Remote middleware client: registered - ${endpoint}`);
         } else {
           this.remove(endpoint);
@@ -133,8 +164,15 @@ class RemoteMiddlewareClient {
 
         return { ok: true };
       },
-      { isDisableMiddlewares: true, isPrivate: true },
+      'Register remote middleware on this microservice',
+      ClientRegisterMiddlewareInput,
+      ClientRegisterMiddlewareOutput,
     );
+
+    this.microservice.addEndpoint(this.registerEndpoint, handler, {
+      isDisableMiddlewares: true,
+      isPrivate: true,
+    });
 
     this.logDriver(() => 'Remote middleware client: register endpoint ready.');
 
@@ -145,11 +183,11 @@ class RemoteMiddlewareClient {
    * Get remote middlewares for current microservice and register them before start
    */
   public async obtainMiddlewares(): Promise<void> {
-    const result = await this.microservice.sendRequest<any, IMiddlewareEntity[]>(
+    const result = await this.microservice.sendRequest<any, ServerObtainMiddlewareOutput>(
       `${this.configurationMsName}.${this.obtainEndpoint}`,
     );
 
-    result.getResult()?.map(({ sender, senderMethod, targetMethod, params }) => {
+    result.getResult()?.list.map(({ sender, senderMethod, targetMethod, params }) => {
       const endpoint = [sender, senderMethod].join('.');
 
       this.add(endpoint, targetMethod, params);
@@ -196,8 +234,8 @@ class RemoteMiddlewareClient {
    * Call microservice method like middleware
    */
   public add(
-    method: string,
-    targetMethod = '*',
+    senderMethod: string,
+    targetMethod: string,
     params: IRemoteMiddlewareReqParams = {},
   ): MiddlewareHandler {
     const {
@@ -209,11 +247,7 @@ class RemoteMiddlewareClient {
       reqParams,
     } = params;
 
-    if (!method) {
-      throw new Error('"method" is required for register remote middleware.');
-    }
-
-    const handler = (this.methods[method] = (data) => {
+    const handler = (this.methods[senderMethod] = (data) => {
       const methodParams = {
         payload: {
           middleware: { ...data },
@@ -223,7 +257,7 @@ class RemoteMiddlewareClient {
 
       return this.microservice
         .sendRequest(
-          method,
+          senderMethod,
           this.convertData(methodParams, data.task.getParams(), convertParams),
           reqParams,
         )
@@ -232,7 +266,7 @@ class RemoteMiddlewareClient {
             throw response.getError();
           }
 
-          const [microservice] = method.split('.');
+          const [microservice] = senderMethod.split('.');
           const result = { ...(response.getResult() ?? {}) };
           const requestData = type === MiddlewareType.request ? data.task.getParams() : data.result;
 

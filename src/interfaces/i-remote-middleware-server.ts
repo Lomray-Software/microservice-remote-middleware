@@ -1,32 +1,16 @@
 import type { IAbstractMicroserviceParams } from '@lomray/microservice-nodejs-lib';
-import type {
-  IMiddlewareEntity,
-  IRemoteMiddlewareReqParams,
-  RemoteMiddlewareActionType,
-} from '@interfaces/i-remote-middleware-client';
-
-interface IRemoteMiddlewareEndpointParamsServer {
-  action: RemoteMiddlewareActionType;
-  target: string;
-  targetMethod: string;
-  method: string;
-  options?: IRemoteMiddlewareReqParams;
-}
+import { MiddlewareEntity } from '@entities/server-params';
 
 interface IRemoteMiddlewareServerParams {
   logDriver: IAbstractMicroserviceParams['logDriver'];
 }
 
 interface IMiddlewareRepository {
-  find(params: Partial<IMiddlewareEntity>): Promise<IMiddlewareEntity[]>;
-  findOne(params: Partial<IMiddlewareEntity>): Promise<IMiddlewareEntity | undefined>;
-  create(params: Omit<IMiddlewareEntity, 'id'>): IMiddlewareEntity;
-  save(entity: IMiddlewareEntity): Promise<IMiddlewareEntity>;
-  remove(entity: IMiddlewareEntity): Promise<IMiddlewareEntity | undefined>;
+  find(params: Partial<MiddlewareEntity>): Promise<MiddlewareEntity[]>;
+  findOne(params: Partial<MiddlewareEntity>): Promise<MiddlewareEntity | undefined>;
+  create(params: Omit<MiddlewareEntity, 'id'>): MiddlewareEntity;
+  save(entity: MiddlewareEntity): Promise<MiddlewareEntity>;
+  remove(entity: MiddlewareEntity): Promise<MiddlewareEntity | undefined>;
 }
 
-export {
-  IRemoteMiddlewareEndpointParamsServer,
-  IRemoteMiddlewareServerParams,
-  IMiddlewareRepository,
-};
+export { IRemoteMiddlewareServerParams, IMiddlewareRepository };

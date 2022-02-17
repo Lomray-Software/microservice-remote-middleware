@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { IMiddlewareEntity } from '@interfaces/i-remote-middleware-client';
+import { MiddlewareEntity } from '@entities/server-params';
 import type { IMiddlewareRepository } from '@interfaces/i-remote-middleware-server';
 import MiddlewareMock from './middleware-mock';
 
@@ -7,23 +7,23 @@ import MiddlewareMock from './middleware-mock';
  * Mock implementation of middleware repository
  */
 class MiddlewareRepositoryMock implements IMiddlewareRepository {
-  find(params: Partial<IMiddlewareEntity>): Promise<IMiddlewareEntity[]> {
+  find(params: Partial<MiddlewareEntity>): Promise<MiddlewareEntity[]> {
     return Promise.resolve([]);
   }
 
-  create(params: Omit<IMiddlewareEntity, 'id'>): IMiddlewareEntity {
+  create(params: Omit<MiddlewareEntity, 'id'>): MiddlewareEntity {
     return new MiddlewareMock(params);
   }
 
-  findOne(params: Partial<IMiddlewareEntity>): Promise<IMiddlewareEntity | undefined> {
+  findOne(params: Partial<MiddlewareEntity>): Promise<MiddlewareEntity | undefined> {
     return Promise.resolve(undefined);
   }
 
-  remove(entity: IMiddlewareEntity): Promise<IMiddlewareEntity | undefined> {
+  remove(entity: MiddlewareEntity): Promise<MiddlewareEntity | undefined> {
     return Promise.resolve(undefined);
   }
 
-  save(entity: IMiddlewareEntity): Promise<IMiddlewareEntity> {
+  save(entity: MiddlewareEntity): Promise<MiddlewareEntity> {
     return Promise.resolve(new MiddlewareMock());
   }
 }
