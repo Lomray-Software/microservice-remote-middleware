@@ -5,9 +5,21 @@ import type {
 } from '@lomray/microservice-nodejs-lib';
 
 enum MiddlewareStrategy {
+  /**
+   * Merge middleware result/request with microservice result/request and return
+   */
   merge = 'merge',
+  /**
+   * Return only middleware result
+   */
   replace = 'replace',
-  same = 'same',
+  /**
+   * Transform microservice response (combine with middleware response, add extra fields, etc...)
+   *  - You can pass request microservice params to middleware method (through 'convertParams')
+   *  - You can pass response microservice result to middleware method (through 'convertResult')
+   *  @see convertData
+   */
+  transform = 'transform',
 }
 
 enum RemoteMiddlewareActionType {

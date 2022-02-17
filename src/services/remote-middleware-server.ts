@@ -103,7 +103,7 @@ class RemoteMiddlewareServer {
   }
 
   /**
-   * Add endpoint for register remote middleware
+   * Endpoint for adding remote middleware (for any microservice except server)
    */
   public addRegisterEndpoint(): RemoteMiddlewareServer {
     this.microservice.addEndpoint<IRemoteMiddlewareEndpointParamsServer>(
@@ -241,7 +241,7 @@ class RemoteMiddlewareServer {
       }),
     );
 
-    return Promise.all(requests).then(() =>
+    return Promise.allSettled(requests).then(() =>
       this.logDriver(
         () => `Remote middleware server: ${data.action} - ${target}.${data.targetMethod ?? ''}`,
       ),

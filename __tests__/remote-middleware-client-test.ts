@@ -117,7 +117,7 @@ describe('remote middleware client', () => {
         } as unknown as IRemoteMiddlewareEndpointParams,
         endpointOptions,
       ),
-    ).to.throw(); // not pass sender
+    ).to.throw(); // invalid action
   });
 
   it('should call "add" method in register handler', async () => {
@@ -281,15 +281,17 @@ describe('remote middleware client', () => {
     expect(result?.payload?.senderStack[0]).to.equal(method);
   });
 
-  it('should success apply middleware handler data: same strategy with convertParams & convertResult', async () => {
+  it('should success apply middleware handler data: transform strategy with convertParams & convertResult', async () => {
     const sendReqStubbed = sinon.stub(microservice, 'sendRequest').resolves(request);
     const addEndpointSpy = sinon.spy(microservice, 'addMiddleware');
 
     middlewareInstance.add(method, 'method-same-with-convert-strategy', {
       isRequired: true,
       type: MiddlewareType.response,
-      convertParams: { 'someParam.test': 'another.hi' },
-      convertResult: { hello: 'res-ms.val' },
+      // from => to
+      convertParams: { 'another.hi': '$someParam.test' },
+      // from => to
+      convertResult: { 'res-ms.val': '$hello', custom: 'custom-value' },
     });
 
     const sameHandler = addEndpointSpy.firstCall.firstArg;
@@ -309,6 +311,7 @@ describe('remote middleware client', () => {
     expect(reqParams.another).to.contain({ hi: 'hi' });
     expect(result).to.deep.equal({
       ms: 'result',
+      custom: 'custom-value',
       'res-ms': {
         val: 'world',
       },

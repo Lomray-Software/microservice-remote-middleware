@@ -46,7 +46,7 @@ class RemoteMiddlewareClient {
   private readonly logDriver: LogDriverType = ConsoleLogDriver();
 
   /**
-   * Name of configuration microservice
+   * Endpoint name on client side for register new remote middlewares for current microservice
    * @private
    */
   private readonly configurationMsName: string = 'configuration';
@@ -58,7 +58,7 @@ class RemoteMiddlewareClient {
   private readonly registerEndpoint: string = 'middleware-register';
 
   /**
-   * Obtain remote endpoint name
+   * Endpoint name on server side for get remote middlewares for current microservice
    * @private
    */
   private readonly obtainEndpoint: string = 'middleware-obtain';
@@ -110,7 +110,7 @@ class RemoteMiddlewareClient {
   }
 
   /**
-   * Add endpoint for register remote middleware
+   * Add endpoint for register remote middleware (current microservice)
    * @protected
    */
   public addRegisterEndpoint(): RemoteMiddlewareClient {
@@ -142,7 +142,7 @@ class RemoteMiddlewareClient {
   }
 
   /**
-   * Obtain middlewares before start
+   * Get remote middlewares for current microservice and register them before start
    */
   public async obtainMiddlewares(): Promise<void> {
     const result = await this.microservice.sendRequest<any, IMiddlewareEntity[]>(
@@ -161,11 +161,11 @@ class RemoteMiddlewareClient {
    * Convert one structure to another
    *
    * Example:
-   * mapObj: { 'from.one.key': 'to.other.key' }
+   * mapObj: { 'to.other.key': '$from.one.key', 'to.number': 5, special: 'custom-value' }
    * input: { from: { one: { key: 1 } } }
    *
    * Output will be:
-   * output: { to: { other: { key: 1 } } }
+   * output: { to: { other: { key: 1 }, number: 5 }, special: 'custom-value' }
    * @private
    */
   private convertData(
@@ -179,8 +179,14 @@ class RemoteMiddlewareClient {
 
     const result = { ...output };
 
-    Object.entries(mapObj).forEach(([from, to]) => {
-      _.set(result, to, _.get(input, from));
+    Object.entries(mapObj).forEach(([to, from]) => {
+      const isAlias = String(from).startsWith('$');
+
+      if (isAlias) {
+        _.set(result, to, _.get(input, from.replace('$', '')));
+      } else {
+        _.set(result, to, from);
+      }
     });
 
     return result;
@@ -197,7 +203,7 @@ class RemoteMiddlewareClient {
     const {
       type = MiddlewareType.request,
       isRequired = false,
-      strategy = MiddlewareStrategy.same,
+      strategy = MiddlewareStrategy.transform,
       convertParams,
       convertResult,
       reqParams,
