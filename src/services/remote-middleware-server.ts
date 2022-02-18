@@ -267,7 +267,7 @@ class RemoteMiddlewareServer {
    * Register/deregister in remote microservices
    * @private
    */
-  private remoteRegister(data: ServerRegisterMiddlewareInput): Promise<void> {
+  public remoteRegister(data: ServerRegisterMiddlewareInput): Promise<void> {
     const { target, action, targetMethod, sender, senderMethod, params } = data;
     const endpoint = [target, this.registerEndpoint].join('.');
 
