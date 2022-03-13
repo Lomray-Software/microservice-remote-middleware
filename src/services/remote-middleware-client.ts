@@ -219,11 +219,18 @@ class RemoteMiddlewareClient {
 
     Object.entries(mapObj).forEach(([to, from]) => {
       const isAlias = String(from).startsWith('$');
+      let val;
 
       if (isAlias) {
-        _.set(result, to, _.get(input, from.replace('$', '')));
+        val = _.get(input, from.replace('$', ''));
       } else {
-        _.set(result, to, from);
+        val = from;
+      }
+
+      if (to === '.') {
+        _.assign(result, val);
+      } else {
+        _.set(result, to, val);
       }
     });
 
@@ -241,6 +248,7 @@ class RemoteMiddlewareClient {
     const {
       type = MiddlewareType.request,
       isRequired = false,
+      isCleanResult = false,
       strategy = MiddlewareStrategy.transform,
       convertParams,
       convertResult,
@@ -258,7 +266,7 @@ class RemoteMiddlewareClient {
       return this.microservice
         .sendRequest(
           senderMethod,
-          this.convertData(methodParams, data.task.getParams(), convertParams),
+          this.convertData(methodParams, { ...data }, convertParams),
           reqParams,
         )
         .then((response) => {
@@ -284,7 +292,14 @@ class RemoteMiddlewareClient {
           }
 
           // same strategy
-          return this.convertData(requestData, result, convertResult);
+          return this.convertData(
+            isCleanResult ? {} : requestData,
+            {
+              middleware: result,
+              ...data,
+            },
+            convertResult,
+          );
         })
         .catch((e) => {
           this.logDriver(

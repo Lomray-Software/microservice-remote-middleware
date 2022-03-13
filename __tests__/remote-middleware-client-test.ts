@@ -301,9 +301,9 @@ describe('remote middleware client', () => {
       isRequired: true,
       type: MiddlewareType.response,
       // from => to
-      convertParams: { 'another.hi': '$someParam.test' },
+      convertParams: { 'another.hi': '$task.params.someParam.test' },
       // from => to
-      convertResult: { 'res-ms.val': '$hello', custom: 'custom-value' },
+      convertResult: { 'res-ms.val': '$middleware.hello', custom: 'custom-value' },
     });
 
     const sameHandler = addEndpointSpy.firstCall.firstArg;
@@ -327,6 +327,35 @@ describe('remote middleware client', () => {
       'res-ms': {
         val: 'world',
       },
+    });
+  });
+
+  it('should success apply middleware handler data: transform strategy with clean result & deep copy', async () => {
+    const sendReqStubbed = sinon.stub(microservice, 'sendRequest').resolves(request);
+    const addEndpointSpy = sinon.spy(microservice, 'addMiddleware');
+
+    middlewareInstance.add(method, 'method-same-with-convert-strategy', {
+      isRequired: true,
+      isCleanResult: true,
+      type: MiddlewareType.response,
+      // from => to
+      convertResult: { '.': '$result' },
+    });
+
+    const sameHandler = addEndpointSpy.firstCall.firstArg;
+    const result = await sameHandler(
+      {
+        task: new MicroserviceRequest({ method: 'method', params: {} }),
+        result: { ms: 'result' },
+      },
+      {},
+    );
+
+    sendReqStubbed.restore();
+    addEndpointSpy.restore();
+
+    expect(result).to.deep.equal({
+      ms: 'result',
     });
   });
 

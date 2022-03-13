@@ -35,6 +35,7 @@ interface IRemoteMiddlewareParams {
 interface IRemoteMiddlewareReqParams {
   type?: MiddlewareType;
   isRequired?: boolean;
+  isCleanResult?: boolean;
   strategy?: MiddlewareStrategy; // default: transform
   convertParams?: Record<string, string>; // you can convert input request data to params middleware method
   convertResult?: Record<string, string>; // you can convert output middleware method data (without replace by default)
