@@ -257,10 +257,7 @@ class RemoteMiddlewareClient {
 
     const handler = (this.methods[senderMethod] = (data) => {
       const methodParams = {
-        payload: {
-          middleware: { ...data },
-          ...(data.task.getParams()?.payload ?? {}),
-        },
+        payload: data.task.getParams()?.payload ?? {},
       };
 
       return this.microservice
