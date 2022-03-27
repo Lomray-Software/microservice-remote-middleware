@@ -40,6 +40,7 @@ interface IRemoteMiddlewareReqParams {
   convertParams?: Record<string, string>; // you can convert input request data to params middleware method
   convertResult?: Record<string, string>; // you can convert output middleware method data (without replace by default)
   reqParams?: IInnerRequestParams;
+  exclude?: string[]; // middleware exclude methods
 }
 
 export {

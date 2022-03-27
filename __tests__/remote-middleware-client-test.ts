@@ -212,7 +212,7 @@ describe('remote middleware client', () => {
 
     expect(addEndpointSpy).to.calledOnce;
     expect(addEndpointSpy.firstCall.args[1]).to.equal(MiddlewareType.request);
-    expect(addEndpointSpy.firstCall.args[2]).to.deep.equal({ match: targetMethod });
+    expect(addEndpointSpy.firstCall.args[2]).to.deep.equal({ match: targetMethod, exclude: [] });
     expect(middlewareInstance).property('methods').have.property('example');
   });
 

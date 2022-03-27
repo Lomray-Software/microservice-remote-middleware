@@ -124,15 +124,14 @@ class RemoteMiddlewareServer {
           senderMethod,
           params,
         } = reqParams;
-        const errors = (
-          await validate(
-            Object.assign(new ServerRegisterMiddlewareInput(), { sender: reqSender, ...reqParams }),
-            {
-              whitelist: true,
-              forbidNonWhitelisted: true,
-            },
-          )
-        ).map(({ value, property, constraints }) => ({ value, property, constraints }));
+        const errors = await validate(
+          Object.assign(new ServerRegisterMiddlewareInput(), { sender: reqSender, ...reqParams }),
+          {
+            whitelist: true,
+            forbidNonWhitelisted: true,
+            validationError: { target: false },
+          },
+        );
 
         if (errors.length > 0) {
           throw new BaseException({

@@ -134,15 +134,14 @@ class RemoteMiddlewareClient {
     > = withMeta(
       async (reqParams, { sender: reqSender }) => {
         const { action, targetMethod, sender = reqSender, senderMethod, params } = reqParams;
-        const errors = (
-          await validate(
-            Object.assign(new ClientRegisterMiddlewareInput(), { sender: reqSender, ...reqParams }),
-            {
-              whitelist: true,
-              forbidNonWhitelisted: true,
-            },
-          )
-        ).map(({ value, property, constraints }) => ({ value, property, constraints }));
+        const errors = await validate(
+          Object.assign(new ClientRegisterMiddlewareInput(), { sender: reqSender, ...reqParams }),
+          {
+            whitelist: true,
+            forbidNonWhitelisted: true,
+            validationError: { target: false },
+          },
+        );
 
         if (errors.length > 0) {
           throw new BaseException({
@@ -250,6 +249,7 @@ class RemoteMiddlewareClient {
       isRequired = false,
       isCleanResult = false,
       strategy = MiddlewareStrategy.transform,
+      exclude = [],
       convertParams,
       convertResult,
       reqParams,
@@ -313,7 +313,7 @@ class RemoteMiddlewareClient {
         });
     });
 
-    this.microservice.addMiddleware(handler, type, { match: targetMethod });
+    this.microservice.addMiddleware(handler, type, { match: targetMethod, exclude });
 
     return handler;
   }
