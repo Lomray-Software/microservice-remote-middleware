@@ -215,12 +215,12 @@ describe('remote middleware server', () => {
     const { sender } = endpointOptions;
 
     // Create middleware
-    await middlewareInstance.add(sender, senderMethod, target, targetMethod);
+    await middlewareInstance.add(sender, senderMethod, target, targetMethod, 1);
 
     sandbox.stub(repository, 'findOne').resolves(new MiddlewareMock());
 
     // Update middleware
-    await middlewareInstance.add(sender, senderMethod, target, targetMethod, middlewareParams);
+    await middlewareInstance.add(sender, senderMethod, target, targetMethod, 2, middlewareParams);
 
     sandbox.restore();
 
@@ -233,6 +233,7 @@ describe('remote middleware server', () => {
       senderMethod,
       target,
       targetMethod,
+      order: 1,
       type: MiddlewareType.request,
     });
     expect(repoSaveSpy).to.calledTwice;
