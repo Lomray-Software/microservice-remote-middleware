@@ -187,7 +187,10 @@ describe('remote middleware server', () => {
     expect(middlewareInstance).have.property('obtainEndpoint').to.equal(endpoint);
     expect(options?.isPrivate).to.ok;
     expect(options?.isDisableMiddlewares).to.ok;
-    expect(repoFindSpy).to.calledWith({ target: endpointOptions.sender });
+    expect(repoFindSpy).to.calledWith({
+      where: { target: endpointOptions.sender },
+      order: { order: 'ASC' },
+    });
 
     // test metadata for obtain endpoint
     const result = (handler as typeof handler & IWithEndpointMeta).getMeta();

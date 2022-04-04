@@ -6,10 +6,12 @@ interface IRemoteMiddlewareServerParams {
 }
 
 interface IMiddlewareRepository {
-  find(
-    params: Partial<MiddlewareEntity>,
-    options?: Record<string, any>,
-  ): Promise<MiddlewareEntity[]>;
+  find(params: {
+    where: Partial<MiddlewareEntity>;
+    order: {
+      [P in keyof MiddlewareEntity]?: 'ASC' | 'DESC' | 1 | -1;
+    };
+  }): Promise<MiddlewareEntity[]>;
   findOne(params: Partial<MiddlewareEntity>): Promise<MiddlewareEntity | undefined>;
   create(params: Omit<MiddlewareEntity, 'id'>): MiddlewareEntity;
   save(entity: MiddlewareEntity): Promise<MiddlewareEntity>;

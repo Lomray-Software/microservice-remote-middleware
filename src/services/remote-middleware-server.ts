@@ -178,7 +178,7 @@ class RemoteMiddlewareServer {
   public addObtainEndpoint(): RemoteMiddlewareServer {
     const handler: IEndpointHandler<never, never, ServerObtainMiddlewareOutput> = withMeta(
       async (_, { sender }) => ({
-        list: await this.repository.find({ target: sender }, { order: { order: 'ASC' } }),
+        list: await this.repository.find({ where: { target: sender }, order: { order: 'ASC' } }),
       }),
       'Get remote middlewares for microservice',
       undefined,

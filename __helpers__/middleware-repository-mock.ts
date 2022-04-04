@@ -7,7 +7,7 @@ import MiddlewareMock from './middleware-mock';
  * Mock implementation of middleware repository
  */
 class MiddlewareRepositoryMock implements IMiddlewareRepository {
-  find(params: Partial<MiddlewareEntity>): Promise<MiddlewareEntity[]> {
+  find(params: Parameters<IMiddlewareRepository['find']>[0]): Promise<MiddlewareEntity[]> {
     return Promise.resolve([]);
   }
 
