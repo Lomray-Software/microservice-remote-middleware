@@ -112,7 +112,7 @@ class RemoteMiddlewareServer {
   public addRegisterEndpoint(): RemoteMiddlewareServer {
     const handler: IEndpointHandler<
       ServerRegisterMiddlewareInput,
-      any,
+      never,
       ServerRegisterMiddlewareOutput
     > = withMeta(
       async (reqParams, { sender: reqSender }) => {
@@ -122,6 +122,7 @@ class RemoteMiddlewareServer {
           targetMethod,
           sender = reqSender,
           senderMethod,
+          order,
           params,
         } = reqParams;
         const errors = await validate(
@@ -142,7 +143,14 @@ class RemoteMiddlewareServer {
         }
 
         if (action === RemoteMiddlewareActionType.ADD) {
-          await this.add(sender as string, senderMethod, target, targetMethod, params || undefined);
+          await this.add(
+            sender as string,
+            senderMethod,
+            target,
+            targetMethod,
+            order,
+            params || undefined,
+          );
         } else {
           await this.remove(sender as string, senderMethod, target, targetMethod, params?.type);
         }
@@ -169,7 +177,9 @@ class RemoteMiddlewareServer {
    */
   public addObtainEndpoint(): RemoteMiddlewareServer {
     const handler: IEndpointHandler<never, never, ServerObtainMiddlewareOutput> = withMeta(
-      async (_, { sender }) => ({ list: await this.repository.find({ target: sender }) }),
+      async (_, { sender }) => ({
+        list: await this.repository.find({ target: sender }, { order: { order: 'ASC' } }),
+      }),
       'Get remote middlewares for microservice',
       undefined,
       ServerObtainMiddlewareOutput,
@@ -194,6 +204,7 @@ class RemoteMiddlewareServer {
     senderMethod: string,
     target: string,
     targetMethod: string,
+    order?: number,
     params: IRemoteMiddlewareReqParams = {},
   ): Promise<void> {
     const type = params.type || MiddlewareType.request;
@@ -207,6 +218,7 @@ class RemoteMiddlewareServer {
     });
 
     if (entity) {
+      entity.order = order;
       entity.params = params;
     } else {
       entity = this.repository.create({
@@ -215,6 +227,7 @@ class RemoteMiddlewareServer {
         target,
         targetMethod,
         type,
+        order,
         params,
       });
     }

@@ -40,6 +40,10 @@ class ServerRegisterMiddlewareInput {
   @IsNotEmpty()
   senderMethod: string;
 
+  @IsNumber()
+  @IsOptional()
+  order?: number;
+
   @JSONSchema({
     example: {
       type: 'request',
@@ -73,6 +77,7 @@ class ServerObtainMiddlewareOutput {
         sender: 'demo2',
         senderMethod: 'method-name',
         type: 'response',
+        order: 1,
         params: {},
       },
     ],
@@ -102,6 +107,9 @@ class MiddlewareEntity {
 
   @IsEnum(MiddlewareType)
   type: MiddlewareType;
+
+  @IsNumber()
+  order?: number;
 
   @JSONSchema({
     example: {
