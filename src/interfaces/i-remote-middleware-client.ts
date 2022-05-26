@@ -41,6 +41,13 @@ interface IRemoteMiddlewareReqParams {
   convertResult?: Record<string, string>; // you can convert output middleware method data (without replace by default)
   reqParams?: IInnerRequestParams;
   exclude?: string[]; // middleware exclude methods
+  // make extra requests and add to convertData
+  extraRequests?: {
+    key: string;
+    method: string;
+    params?: Record<string, any>;
+    isRequired?: boolean;
+  }[];
 }
 
 export {

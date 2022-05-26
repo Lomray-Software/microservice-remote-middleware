@@ -30,6 +30,7 @@
     "baseUrl": ".",
     "paths": {
       "@__helpers__/*": ["./__helpers__/*"],
+      "@constants/*": ["./src/constants/*"],
       "@entities/*": ["./src/entities/*"],
       "@helpers/*": ["./src/helpers/*"],
       "@interfaces/*": ["./src/interfaces/*"],

@@ -22,5 +22,5 @@ export default {
       }),
     }),
   ],
-  external: ['axios', 'lodash', '@lomray/microservice-nodejs-lib'],
+  external: ['axios', 'lodash', '@lomray/microservice-nodejs-lib', 'class-validator', 'class-validator-jsonschema'],
 };

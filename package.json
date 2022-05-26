@@ -36,7 +36,7 @@
 		"prepare": "husky install"
 	},
 	"dependencies": {
-		"@lomray/microservice-nodejs-lib": "^2.6.0",
+		"@lomray/microservice-nodejs-lib": "^2.7.0",
 		"class-validator": "^0.13.2",
 		"class-validator-jsonschema": "^3.1.0",
 		"lodash": "^4.17.21"

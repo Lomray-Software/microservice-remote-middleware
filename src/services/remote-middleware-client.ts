@@ -12,6 +12,7 @@ import {
 } from '@lomray/microservice-nodejs-lib';
 import { validate } from 'class-validator';
 import _ from 'lodash';
+import ExceptionCode from '@constants/exception-code';
 import {
   ClientRegisterMiddlewareInput,
   ClientRegisterMiddlewareOutput,
@@ -145,6 +146,7 @@ class RemoteMiddlewareClient {
 
         if (errors.length > 0) {
           throw new BaseException({
+            code: ExceptionCode.FAILED_REGISTER_MIDDLEWARE,
             status: 422,
             message: 'Invalid params for add remote middleware.',
             payload: errors,
@@ -195,10 +197,10 @@ class RemoteMiddlewareClient {
   }
 
   /**
-   * Convert one structure to another
+   * Change request params or request result
    *
    * Example:
-   * mapObj: { 'to.other.key': '$from.one.key', 'to.number': 5, special: 'custom-value' }
+   * mapObj: { 'to.other.key': "<%= _.get(from, 'one.key') %>", 'to.number': 5, special: 'custom-value' }
    * input: { from: { one: { key: 1 } } }
    *
    * Output will be:
@@ -223,7 +225,7 @@ class RemoteMiddlewareClient {
       if (isAlias) {
         val = _.get(input, from.replace('$', ''));
       } else {
-        val = from;
+        val = _.template(from)(input);
       }
 
       if (to === '.') {
@@ -237,6 +239,47 @@ class RemoteMiddlewareClient {
   }
 
   /**
+   * Make extra requests before call middleware
+   * @private
+   */
+  private async makeExtraRequests(
+    requests: IRemoteMiddlewareReqParams['extraRequests'],
+    templateParams?: Record<string, any>,
+  ): Promise<Record<string, any>> {
+    if (!requests || (requests?.length ?? 0) === 0) {
+      return {};
+    }
+
+    const reqList = requests.map(({ method, params }) => {
+      const msMethod = _.template(method)(templateParams);
+      const data = params ? JSON.parse(_.template(JSON.stringify(params))(templateParams)) : {};
+
+      return this.microservice.sendRequest(msMethod, data);
+    });
+    const result = await Promise.allSettled(reqList);
+
+    return result.reduce((res, response, i) => {
+      const { key, isRequired = false } = requests[i];
+
+      if (response.status === 'rejected' && isRequired) {
+        throw new BaseException({
+          code: ExceptionCode.EXTRA_REQUEST_FAILED,
+          status: 500,
+          message: 'Failed middleware request.',
+          payload: {
+            message: response.reason?.message ?? 'Unknown reason',
+          },
+        });
+      }
+
+      return {
+        ...res,
+        [key]: response?.['value'].result,
+      };
+    }, {});
+  }
+
+  /**
    * Call microservice method like middleware
    */
   public add(
@@ -245,72 +288,80 @@ class RemoteMiddlewareClient {
     params: IRemoteMiddlewareReqParams = {},
   ): MiddlewareHandler {
     const {
+      convertParams,
+      convertResult,
+      reqParams,
+      extraRequests,
       type = MiddlewareType.request,
       isRequired = false,
       isCleanResult = false,
       strategy = MiddlewareStrategy.transform,
       exclude = [],
-      convertParams,
-      convertResult,
-      reqParams,
     } = params;
 
-    const handler = (this.methods[senderMethod] = (data) => {
+    const handler = (this.methods[senderMethod] = async (data) => {
       const methodParams = {
         payload: data.task.getParams()?.payload ?? {},
       };
 
-      return this.microservice
-        .sendRequest(
+      const extraParams = await this.makeExtraRequests(extraRequests, data);
+
+      try {
+        const response = await this.microservice.sendRequest(
           senderMethod,
-          this.convertData(methodParams, { ...data }, convertParams),
+          this.convertData(methodParams, { ...data, ...extraParams }, convertParams),
           reqParams,
-        )
-        .then((response) => {
-          if (isRequired && response.getError()) {
-            throw response.getError();
-          }
+        );
 
-          const [microservice] = senderMethod.split('.');
-          const result = { ...(response.getResult() ?? {}) };
-          const requestData = type === MiddlewareType.request ? data.task.getParams() : data.result;
+        if (isRequired && response.getError()) {
+          throw response.getError();
+        }
 
-          _.set(result, 'payload.senderStack', [
-            ...(data.task.getParams()?.payload?.senderStack ?? []),
-            microservice,
-          ]);
+        const [microservice] = senderMethod.split('.');
+        const result = { ...(response.getResult() ?? {}) };
+        const requestData = type === MiddlewareType.request ? data.task.getParams() : data.result;
 
-          switch (strategy) {
-            case MiddlewareStrategy.merge:
-              return _.merge(requestData, result);
+        _.set(result, 'payload.senderStack', [
+          ...(data.task.getParams()?.payload?.senderStack ?? []),
+          microservice,
+        ]);
 
-            case MiddlewareStrategy.replace:
-              return result;
-          }
+        switch (strategy) {
+          case MiddlewareStrategy.merge:
+            return _.merge(requestData, result);
 
-          // same strategy
-          return this.convertData(
-            isCleanResult ? {} : requestData,
-            {
-              middleware: result,
-              ...data,
-            },
-            convertResult,
-          );
-        })
-        .catch((e) => {
-          this.logDriver(
-            () => `Remote middleware client error: ${e.message as string}`,
-            LogType.ERROR,
-            data.task.getId(),
-          );
+          case MiddlewareStrategy.replace:
+            return result;
+        }
 
-          if (!isRequired) {
-            return;
-          }
+        // same strategy
+        return this.convertData(
+          isCleanResult ? {} : requestData,
+          {
+            middleware: result,
+            ...data,
+            ...extraParams,
+          },
+          convertResult,
+        );
+      } catch (e) {
+        this.logDriver(
+          () => `Remote middleware client error: ${e.message as string}`,
+          LogType.ERROR,
+          data.task.getId(),
+        );
 
-          throw e;
+        if (!isRequired) {
+          return;
+        }
+
+        throw new BaseException({
+          code: ExceptionCode.FAILED_MIDDLEWARE_REQUEST,
+          status: 500,
+          message: e.message,
+          payload: { original: e },
         });
+      }
     });
 
     this.microservice.addMiddleware(handler, type, { match: targetMethod, exclude });

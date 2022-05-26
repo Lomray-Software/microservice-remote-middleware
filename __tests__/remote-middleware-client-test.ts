@@ -301,9 +301,9 @@ describe('remote middleware client', () => {
       isRequired: true,
       type: MiddlewareType.response,
       // from => to
-      convertParams: { 'another.hi': '$task.params.someParam.test' },
+      convertParams: { 'another.hi': '<%= task.params.someParam.test %>' },
       // from => to
-      convertResult: { 'res-ms.val': '$middleware.hello', custom: 'custom-value' },
+      convertResult: { 'res-ms.val': '<%= middleware.hello %>', custom: 'custom-value' },
     });
 
     const sameHandler = addEndpointSpy.firstCall.firstArg;
@@ -357,6 +357,88 @@ describe('remote middleware client', () => {
     expect(result).to.deep.equal({
       ms: 'result',
     });
+  });
+
+  it('should success apply middleware handler data: make extra request', async () => {
+    const result1 = { resp: 'resp1' };
+    const result2 = { resp: 'resp2' };
+
+    const sendReqStubbed = sinon
+      .stub(microservice, 'sendRequest')
+      .onCall(0)
+      .resolves(new MicroserviceResponse({ result: result1 }))
+      .onCall(1)
+      .resolves(new MicroserviceResponse({ result: result2 }))
+      .onCall(2)
+      .resolves(request);
+    const addEndpointSpy = sinon.spy(microservice, 'addMiddleware');
+
+    middlewareInstance.add(method, 'check-extra-requests', {
+      isRequired: true,
+      type: MiddlewareType.response,
+      extraRequests: [
+        { key: 'req1Result', method: 'ms.demo' },
+        {
+          key: 'req2Result',
+          method: 'ms.demo2',
+          params: { param: '<%= task.params.demo %>' },
+          isRequired: true,
+        },
+      ],
+      // from => to
+      convertParams: { response1: '<%= req1Result.resp %>' },
+      // from => to
+      convertResult: { response2: '<%= req2Result.resp %>' },
+    });
+
+    const sameHandler = addEndpointSpy.firstCall.firstArg;
+    const result = await sameHandler(
+      {
+        task: new MicroserviceRequest({ method: 'method', params: { demo: 3 } }),
+        result: { ms: 'result' },
+      },
+      {},
+    );
+
+    const [, reqParams] = sendReqStubbed.getCall(2).args;
+
+    sendReqStubbed.restore();
+    addEndpointSpy.restore();
+
+    expect(reqParams.response1).to.equal(result1.resp);
+    expect(result).to.deep.equal({
+      ms: 'result',
+      response2: result2.resp,
+    });
+  });
+
+  it('should throw middleware error: error extra request', async () => {
+    const sendReqStubbed = sinon.stub(microservice, 'sendRequest').rejects(new BaseException());
+    const addEndpointSpy = sinon.spy(microservice, 'addMiddleware');
+
+    middlewareInstance.add(method, 'check-extra-requests-error', {
+      isRequired: true,
+      type: MiddlewareType.response,
+      extraRequests: [
+        {
+          key: 'reqKey',
+          method: 'ms.demo3',
+          isRequired: true,
+        },
+      ],
+    });
+
+    const sameHandler = addEndpointSpy.firstCall.firstArg;
+    const [result] = await Promise.allSettled([
+      sameHandler({ task: new MicroserviceRequest({ method: 'method' }) }, {}),
+    ]);
+
+    sendReqStubbed.restore();
+    addEndpointSpy.restore();
+
+    expect(result?.status).to.equal('rejected');
+    // @ts-ignore
+    expect(result?.reason).to.instanceOf(BaseException);
   });
 
   it('should NOT throw error if middleware handle is NOT required and response is error', async () => {
