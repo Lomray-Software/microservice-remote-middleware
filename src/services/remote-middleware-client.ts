@@ -267,6 +267,8 @@ class RemoteMiddlewareClient {
           status: 500,
           message: 'Failed middleware request.',
           payload: {
+            code: response.reason?.code,
+            status: response.reason?.status,
             message: response.reason?.message ?? 'Unknown reason',
           },
         });
@@ -357,9 +359,10 @@ class RemoteMiddlewareClient {
 
         throw new BaseException({
           code: ExceptionCode.FAILED_MIDDLEWARE_REQUEST,
-          status: 500,
+          status: e.status || 500,
+          service: e.service,
           message: e.message,
-          payload: { original: e },
+          payload: { original: e.payload },
         });
       }
     });
