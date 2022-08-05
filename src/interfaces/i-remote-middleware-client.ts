@@ -48,6 +48,8 @@ interface IRemoteMiddlewareReqParams {
     params?: Record<string, any>;
     isRequired?: boolean;
   }[];
+  // maximum value size in kilobytes, by default: 0 (disabled)
+  maxValueSize?: number;
 }
 
 export {

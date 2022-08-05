@@ -1,6 +1,7 @@
 import type {
   IEndpointHandler,
   LogDriverType,
+  MiddlewareData,
   MiddlewareHandler,
 } from '@lomray/microservice-nodejs-lib';
 import {
@@ -12,6 +13,7 @@ import {
 } from '@lomray/microservice-nodejs-lib';
 import { validate } from 'class-validator';
 import _ from 'lodash';
+import traverse from 'traverse';
 import ExceptionCode from '@constants/exception-code';
 import {
   ClientRegisterMiddlewareInput,
@@ -282,6 +284,26 @@ class RemoteMiddlewareClient {
   }
 
   /**
+   * Cut largest field values (e.g. base64)
+   * @private
+   */
+  private static cutLongFields(data: MiddlewareData, maxValueSize: number): void {
+    if (maxValueSize === 0) {
+      return;
+    }
+
+    traverse(data.task).forEach(function (val) {
+      // remove largest values
+      if (
+        ['string', 'number', 'symbol'].includes(typeof val) &&
+        String(val).length / 1024 > maxValueSize
+      ) {
+        this.update(String(val).slice(0, 50));
+      }
+    });
+  }
+
+  /**
    * Call microservice method like middleware
    */
   public add(
@@ -299,9 +321,14 @@ class RemoteMiddlewareClient {
       isCleanResult = false,
       strategy = MiddlewareStrategy.transform,
       exclude = [],
+      maxValueSize = 0,
     } = params;
 
     const handler = (this.methods[senderMethod] = async (data) => {
+      if (type === MiddlewareType.request) {
+        RemoteMiddlewareClient.cutLongFields(data, maxValueSize);
+      }
+
       const methodParams = {
         payload: data.task.getParams()?.payload ?? {},
       };

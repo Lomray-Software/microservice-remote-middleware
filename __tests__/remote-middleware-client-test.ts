@@ -204,7 +204,14 @@ describe('remote middleware client', () => {
     const targetMethod = 'target-m';
     const addEndpointSpy = sinon.spy(microservice, 'addMiddleware');
 
-    middlewareInstance.add(method, targetMethod, { isRequired: true });
+    middlewareInstance.add(method, targetMethod, {
+      isRequired: true,
+      maxValueSize: 0.05,
+      convertParams: {
+        notLargest: '<%= task.params.notLargest %>',
+        largest: '<%= task.params.largest %>',
+      },
+    });
 
     handler = addEndpointSpy.firstCall.firstArg;
 
@@ -234,11 +241,26 @@ describe('remote middleware client', () => {
 
   it('should success apply middleware handler data: same strategy', async () => {
     const sendReqStubbed = sinon.stub(microservice, 'sendRequest').resolves(request);
-    const result = await handler({ task: new MicroserviceRequest({ method: 'method' }) }, {});
+    const params = {
+      notLargest: 'this_is_not_largest',
+      largest: 'this_is_very_very_very_very_very_largest_value_and_cut',
+    };
+    const result = await handler(
+      {
+        task: new MicroserviceRequest({
+          method: 'method',
+          params,
+        }),
+      },
+      {},
+    );
 
     sendReqStubbed.restore();
 
-    expect(result).to.undefined;
+    expect(result).to.deep.equal({
+      notLargest: params.notLargest,
+      largest: params.largest.slice(0, 50),
+    });
   });
 
   it('should success apply middleware handler data: replace strategy', async () => {
@@ -394,7 +416,12 @@ describe('remote middleware client', () => {
     const sameHandler = addEndpointSpy.firstCall.firstArg;
     const result = await sameHandler(
       {
-        task: new MicroserviceRequest({ method: 'method', params: { demo: 3 } }),
+        task: new MicroserviceRequest({
+          method: 'method',
+          params: {
+            demo: 3,
+          },
+        }),
         result: { ms: 'result' },
       },
       {},
