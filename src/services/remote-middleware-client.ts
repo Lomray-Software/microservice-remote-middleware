@@ -13,13 +13,13 @@ import {
 } from '@lomray/microservice-nodejs-lib';
 import { validate } from 'class-validator';
 import _ from 'lodash';
-import traverse from 'traverse';
 import ExceptionCode from '@constants/exception-code';
 import {
   ClientRegisterMiddlewareInput,
   ClientRegisterMiddlewareOutput,
 } from '@entities/client-params';
 import { ServerObtainMiddlewareOutput } from '@entities/server-params';
+import deeply from '@helpers/deeply';
 import withMeta from '@helpers/with-meta';
 import type {
   IRemoteMiddlewareParams,
@@ -287,20 +287,25 @@ class RemoteMiddlewareClient {
    * Cut largest field values (e.g. base64)
    * @private
    */
-  private static cutLongFields(data: MiddlewareData, maxValueSize: number): void {
+  private static cutLongFields(data: MiddlewareData, maxValueSize: number): Record<string, any> {
     if (maxValueSize === 0) {
-      return;
+      return data;
     }
 
-    traverse(data.task).forEach(function (val) {
-      // remove largest values
-      if (
-        ['string', 'number', 'symbol'].includes(typeof val) &&
-        String(val).length / 1024 > maxValueSize
-      ) {
-        this.update(String(val).slice(0, 50));
-      }
-    });
+    return {
+      ...data,
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      task: deeply(_.mapValues)(data.task, (val: any) => {
+        if (
+          ['string', 'number', 'symbol'].includes(typeof val) &&
+          String(val).length / 1024 > maxValueSize
+        ) {
+          return String(val).slice(0, 50);
+        }
+
+        return val;
+      }),
+    };
   }
 
   /**
@@ -325,10 +330,6 @@ class RemoteMiddlewareClient {
     } = params;
 
     const handler = (this.methods[senderMethod] = async (data) => {
-      if (type === MiddlewareType.request) {
-        RemoteMiddlewareClient.cutLongFields(data, maxValueSize);
-      }
-
       const methodParams = {
         payload: data.task.getParams()?.payload ?? {},
       };
@@ -338,7 +339,11 @@ class RemoteMiddlewareClient {
       try {
         const response = await this.microservice.sendRequest(
           senderMethod,
-          this.convertData(methodParams, { ...data, ...extraParams }, convertParams),
+          this.convertData(
+            methodParams,
+            { ...RemoteMiddlewareClient.cutLongFields(data, maxValueSize), ...extraParams },
+            convertParams,
+          ),
           reqParams,
         );
 
@@ -363,7 +368,7 @@ class RemoteMiddlewareClient {
             return result;
         }
 
-        // same strategy
+        // transform strategy
         return this.convertData(
           isCleanResult ? {} : requestData,
           {

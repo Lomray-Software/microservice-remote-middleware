@@ -255,12 +255,16 @@ describe('remote middleware client', () => {
       {},
     );
 
+    const [, passParams] = sendReqStubbed.firstCall.args;
+
     sendReqStubbed.restore();
 
-    expect(result).to.deep.equal({
+    expect(passParams).to.deep.equal({
       notLargest: params.notLargest,
       largest: params.largest.slice(0, 50),
+      payload: {},
     });
+    expect(result).to.deep.equal(params);
   });
 
   it('should success apply middleware handler data: replace strategy', async () => {
