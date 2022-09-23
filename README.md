@@ -5,12 +5,12 @@
 ![GitHub package.json dependency version (dev dep on branch)](https://img.shields.io/github/package-json/dependency-version/Lomray-Software/microservice-remote-middleware/dev/typescript/master)
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 
-[![Quality Gate Status](https://sonarqube-proxy.lomray.com/status/Lomray-Software_microservice-remote-middleware?token=20253ef5f496169834bf459a8a1c1e25)](https://sonarqube.lomray.com/dashboard?id=Lomray-Software_microservice-remote-middleware)
-[![Reliability Rating](https://sonarqube-proxy.lomray.com/reliability/Lomray-Software_microservice-remote-middleware?token=20253ef5f496169834bf459a8a1c1e25)](https://sonarqube.lomray.com/dashboard?id=Lomray-Software_microservice-remote-middleware)
-[![Security Rating](https://sonarqube-proxy.lomray.com/security/Lomray-Software_microservice-remote-middleware?token=20253ef5f496169834bf459a8a1c1e25)](https://sonarqube.lomray.com/dashboard?id=Lomray-Software_microservice-remote-middleware)
-[![Vulnerabilities](https://sonarqube-proxy.lomray.com/vulnerabilities/Lomray-Software_microservice-remote-middleware?token=20253ef5f496169834bf459a8a1c1e25)](https://sonarqube.lomray.com/dashboard?id=Lomray-Software_microservice-remote-middleware)
-[![Lines of code](https://sonarqube-proxy.lomray.com/lines/Lomray-Software_microservice-remote-middleware?token=20253ef5f496169834bf459a8a1c1e25)](https://sonarqube.lomray.com/dashboard?id=Lomray-Software_microservice-remote-middleware)
-[![Coverage](https://sonarqube-proxy.lomray.com/coverage/Lomray-Software_microservice-remote-middleware?token=20253ef5f496169834bf459a8a1c1e25)](https://sonarqube.lomray.com/dashboard?id=Lomray-Software_microservice-remote-middleware)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Lomray-Software_microservice-remote-middleware&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Lomray-Software_microservice-remote-middleware)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=Lomray-Software_microservice-remote-middleware&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=Lomray-Software_microservice-remote-middleware)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Lomray-Software_microservice-remote-middleware&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=Lomray-Software_microservice-remote-middleware)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=Lomray-Software_microservice-remote-middleware&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=Lomray-Software_microservice-remote-middleware)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=Lomray-Software_microservice-remote-middleware&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=Lomray-Software_microservice-remote-middleware)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Lomray-Software_microservice-remote-middleware&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Lomray-Software_microservice-remote-middleware)
 
 ## Install
 ```bash
@@ -21,7 +21,7 @@ npm i --save @lomray/microservice-remote-middleware
 
 1. Create `server` remote middleware instance. It might be any microservice but only one.
 ```typescript
-import { Microservice } from '@lomray/microservice-nodejs-lib';
+import { Microservice } from '@lomray/microservice-remote-middleware';
 import { RemoteMiddlewareServer } from '@lomray/microservice-remote-middleware';
 import { createConnection } from 'typeorm';
 
@@ -70,7 +70,7 @@ export default result();
 ```
 2. Create `client` remote middleware instance. It might be any microservice.
 ```typescript
-import { Gateway } from '@lomray/microservice-nodejs-lib';
+import { Gateway } from '@lomray/microservice-remote-middleware';
 import { RemoteMiddlewareClient } from '@lomray/microservice-remote-middleware';
 
 const microservice = Gateway.create({ name: 'gateway' });
