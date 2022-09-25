@@ -390,11 +390,11 @@ class RemoteMiddlewareClient {
         }
 
         throw new BaseException({
-          code: ExceptionCode.FAILED_MIDDLEWARE_REQUEST,
+          code: e.code,
           status: e.status || 500,
           service: e.service,
           message: e.message,
-          payload: { original: e.payload },
+          payload: { ...(e?.payload ?? {}), code: ExceptionCode.FAILED_MIDDLEWARE_REQUEST },
         });
       }
     });
