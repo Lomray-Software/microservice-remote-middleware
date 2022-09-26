@@ -1,11 +1,9 @@
-import type { LogDriverType } from '@lomray/microservice-nodejs-lib';
-import {
+import type {
+  LogDriverType,
   AbstractMicroservice,
-  BaseException,
-  ConsoleLogDriver,
   IEndpointHandler,
-  MiddlewareType,
 } from '@lomray/microservice-nodejs-lib';
+import { BaseException, ConsoleLogDriver, MiddlewareType } from '@lomray/microservice-nodejs-lib';
 import { validate } from 'class-validator';
 import {
   MiddlewareEntity,

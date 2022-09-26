@@ -1,5 +1,5 @@
 import type { IAbstractMicroserviceParams } from '@lomray/microservice-nodejs-lib';
-import { MiddlewareEntity } from '@entities/server-params';
+import type { MiddlewareEntity } from '@entities/server-params';
 
 interface IRemoteMiddlewareServerParams {
   logDriver: IAbstractMicroserviceParams['logDriver'];

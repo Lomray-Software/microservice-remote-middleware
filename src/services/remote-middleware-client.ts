@@ -3,9 +3,9 @@ import type {
   LogDriverType,
   MiddlewareData,
   MiddlewareHandler,
+  AbstractMicroservice,
 } from '@lomray/microservice-nodejs-lib';
 import {
-  AbstractMicroservice,
   BaseException,
   ConsoleLogDriver,
   LogType,
@@ -18,7 +18,7 @@ import {
   ClientRegisterMiddlewareInput,
   ClientRegisterMiddlewareOutput,
 } from '@entities/client-params';
-import { ServerObtainMiddlewareOutput } from '@entities/server-params';
+import type { ServerObtainMiddlewareOutput } from '@entities/server-params';
 import deeply from '@helpers/deeply';
 import withMeta from '@helpers/with-meta';
 import type {

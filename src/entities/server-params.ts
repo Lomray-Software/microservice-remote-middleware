@@ -9,10 +9,8 @@ import {
   IsString,
 } from 'class-validator';
 import { JSONSchema } from 'class-validator-jsonschema';
-import {
-  IRemoteMiddlewareReqParams,
-  RemoteMiddlewareActionType,
-} from '@interfaces/i-remote-middleware-client';
+import type { IRemoteMiddlewareReqParams } from '@interfaces/i-remote-middleware-client';
+import { RemoteMiddlewareActionType } from '@interfaces/i-remote-middleware-client';
 
 /**
  * Input params for register middleware on server
