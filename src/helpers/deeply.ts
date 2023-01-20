@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import _ from 'lodash';
 
 type TFn = (val: any, key: string) => Record<string, any> | any;
