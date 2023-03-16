@@ -1,19 +1,22 @@
 import {
   BaseException,
   ConsoleLogDriver,
-  IEndpointHandler,
   Microservice,
   MicroserviceRequest,
   MicroserviceResponse,
-  MiddlewareHandler,
   MiddlewareType,
+} from '@lomray/microservice-nodejs-lib';
+import type {
+  IEndpointHandler,
+  MiddlewareHandler,
+  IEndpointOptions,
 } from '@lomray/microservice-nodejs-lib';
 import { expect } from 'chai';
 import _ from 'lodash';
 import sinon from 'sinon';
 import MiddlewareMock from '@__helpers__/middleware-mock';
-import { ClientRegisterMiddlewareInput } from '@entities/client-params';
-import { IWithEndpointMeta } from '@helpers/with-meta';
+import type { ClientRegisterMiddlewareInput } from '@entities/client-params';
+import type { IWithEndpointMeta } from '@helpers/with-meta';
 import {
   MiddlewareStrategy,
   RemoteMiddlewareActionType,
@@ -86,7 +89,7 @@ describe('remote middleware client', () => {
     senderMethod: 'method',
     targetMethod: 'targetMethod',
   };
-  const endpointOptions = { sender: 'sender' } as any;
+  const endpointOptions = { sender: 'sender' } as IEndpointOptions;
 
   it('should correct add register endpoint', () => {
     const addEndpointSpy = sinon.spy(microservice, 'addEndpoint');
@@ -115,7 +118,7 @@ describe('remote middleware client', () => {
   it('should throw validation errors when pass incorrect registration params', async () => {
     const result = await Promise.allSettled([
       // not pass sender
-      registerHandler(endpointParams, {} as any),
+      registerHandler(endpointParams, {} as never),
       // not pass action
       registerHandler(
         _.omit(endpointParams, ['action']) as ClientRegisterMiddlewareInput,
@@ -409,6 +412,11 @@ describe('remote middleware client', () => {
           method: 'ms.demo2',
           params: { param: '<%= task.params.demo %>' },
           isRequired: true,
+        },
+        {
+          key: 'req3Result',
+          method: 'ms.demo3',
+          condition: '<%= task.params.demo === 4 %>', // 'false' - skip this request
         },
       ],
       // from => to

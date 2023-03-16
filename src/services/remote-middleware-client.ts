@@ -252,11 +252,12 @@ class RemoteMiddlewareClient {
       return {};
     }
 
-    const reqList = requests.map(({ method, params }) => {
+    const reqList = requests.map(({ method, params, condition }) => {
       const msMethod = _.template(method)(templateParams);
       const data = params ? JSON.parse(_.template(JSON.stringify(params))(templateParams)) : {};
+      const shouldSend = !condition || _.template(condition)(templateParams) === 'true';
 
-      return this.microservice.sendRequest(msMethod, data);
+      return shouldSend ? this.microservice.sendRequest(msMethod, data) : {};
     });
     const result = await Promise.allSettled(reqList);
 

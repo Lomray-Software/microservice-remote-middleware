@@ -47,6 +47,7 @@ interface IRemoteMiddlewareReqParams {
     method: string;
     params?: Record<string, any>;
     isRequired?: boolean;
+    condition?: string; // condition template, should return 'true' or 'false'
   }[];
   // maximum value size in kilobytes, by default: 0 (disabled)
   maxValueSize?: number;
